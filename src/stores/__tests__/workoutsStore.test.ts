@@ -24,11 +24,11 @@ describe('workoutsStore', () => {
     expect(services.workoutsStore.getState().summaries).toEqual([]);
   });
 
-  it('cria Tabata clássico de 4min', async () => {
+  it('cria Tabata clássico de 4min06s', async () => {
     const { workoutsStore } = await setup();
     const tabata = await workoutsStore.getState().createTabata();
     expect(tabata.name).toBe('Tabata clássico');
-    expect(workoutsStore.getState().summaries[0]).toMatchObject({ totalSec: 240 });
+    expect(workoutsStore.getState().summaries[0]).toMatchObject({ totalSec: 246 });
   });
 
   it('duplica, favorita e remove', async () => {

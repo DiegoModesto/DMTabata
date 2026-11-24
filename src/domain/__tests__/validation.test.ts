@@ -1,7 +1,7 @@
 import { planExampleWorkout } from '@/test/factories';
 
 import { isWorkoutValid, validateWorkout } from '../validation';
-import { createWorkout } from '../workout';
+import { createWorkout, LIMITS } from '../workout';
 
 const paths = (w: Parameters<typeof validateWorkout>[0]) => validateWorkout(w).map((e) => e.path);
 
@@ -57,6 +57,20 @@ describe('validateWorkout — regras de negócio', () => {
       path: 'cycles.0.items.0.label',
       message: 'Dê um nome ao exercício.',
     });
+  });
+
+  it('preparação mínima de 16 s', () => {
+    expect(paths(planExampleWorkout({ prepareSec: 15 }))).toContain('prepareSec');
+    expect(paths(planExampleWorkout({ prepareSec: 0 }))).toContain('prepareSec');
+    expect(paths(planExampleWorkout({ prepareSec: 16 }))).not.toContain('prepareSec');
+    expect(validateWorkout(planExampleWorkout({ prepareSec: 10 }))).toContainEqual({
+      path: 'prepareSec',
+      message: 'Preparação deve estar entre 16 e 300.',
+    });
+  });
+
+  it('novos treinos já nascem com a preparação mínima', () => {
+    expect(createWorkout({ name: 'X' }).prepareSec).toBe(LIMITS.minPrepareSec);
   });
 
   it('rejeita tempos fracionados', () => {

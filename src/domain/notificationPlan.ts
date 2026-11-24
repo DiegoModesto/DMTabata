@@ -45,7 +45,7 @@ function soundForPhase(phase: Phase, settings: AlertSettings): string | null {
     case 'cycleRest':
       return notificationSound(settings.sounds.cycleEnd ?? settings.sounds.restStart);
     case 'prepare':
-      return null;
+      return notificationSound(settings.sounds.prepareStart);
   }
 }
 
@@ -66,7 +66,14 @@ export function planNotifications(input: {
   workoutName: string;
   limit?: number;
 }): PlannedNotification[] {
-  const { timeline, elapsedMs, nowEpoch, settings, workoutName, limit = NOTIFICATION_LIMIT } = input;
+  const {
+    timeline,
+    elapsedMs,
+    nowEpoch,
+    settings,
+    workoutName,
+    limit = NOTIFICATION_LIMIT,
+  } = input;
   if (limit <= 0 || elapsedMs >= timeline.totalMs) return [];
 
   const upcoming: PlannedNotification[] = timeline.phases

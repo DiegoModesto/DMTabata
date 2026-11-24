@@ -41,8 +41,8 @@ describe('WorkoutEditorScreen — novo treino', () => {
     expect(screen.getByLabelText('Trabalho: 1:00')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Concluir' }));
 
-    // 10s preparo + 220s do ciclo
-    expect(screen.getByLabelText('Tempo total 3min50s')).toBeTruthy();
+    // 16s preparo + 220s do ciclo
+    expect(screen.getByLabelText('Tempo total 3min56s')).toBeTruthy();
     expect(screen.getByText('Tempo do ciclo: 3min40s')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Salvar' }));
@@ -51,7 +51,11 @@ describe('WorkoutEditorScreen — novo treino', () => {
     const [summary] = services.workoutsStore.getState().summaries;
     const saved = await services.workouts.getById(summary.id);
     expect(saved!.name).toBe('Treino de perna');
-    expect(saved!.cycles[0].items[2]).toMatchObject({ label: 'Prancha', workSec: 60, restSec: null });
+    expect(saved!.cycles[0].items[2]).toMatchObject({
+      label: 'Prancha',
+      workSec: 60,
+      restSec: null,
+    });
     expect(workoutTotals(saved!).cycleDurationsSec).toEqual([220]);
     expect(mockRouter.replace).toHaveBeenCalledWith(`/workout/${saved!.id}`);
   });

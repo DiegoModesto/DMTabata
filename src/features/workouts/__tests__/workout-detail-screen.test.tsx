@@ -23,9 +23,9 @@ describe('WorkoutDetailScreen — pré-treino', () => {
 
   it('mostra o tempo total e o tempo de cada ciclo', async () => {
     await setup();
-    // 10 + 220 + 60 + 100 = 390s
-    expect(await screen.findByLabelText('Tempo total 6min30s')).toBeTruthy();
-    expect(screen.getByText('6:30')).toBeTruthy();
+    // 16 + 220 + 60 + 100 = 396s
+    expect(await screen.findByLabelText('Tempo total 6min36s')).toBeTruthy();
+    expect(screen.getByText('6:36')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ciclo 1, 3min40s' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Core, 1min40s' })).toBeTruthy();
     expect(screen.getByText('Depois: 1min de descanso entre ciclos')).toBeTruthy();

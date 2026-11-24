@@ -145,7 +145,8 @@ function CycleCard({
                   type="smallBold"
                   style={overridden ? { color: theme.primary } : undefined}>
                   {overridden ? '✎ ' : ''}
-                  {effectiveWorkSec(cycle, item)}s / {rest > 0 ? `${effectiveRestSec(cycle, item)}s` : '—'}
+                  {effectiveWorkSec(cycle, item)}s /{' '}
+                  {rest > 0 ? `${effectiveRestSec(cycle, item)}s` : '—'}
                 </ThemedText>
               </Pressable>
               <IconButton
@@ -288,6 +289,7 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
       <Card>
         <Stepper
           label="Preparação"
+          min={LIMITS.minPrepareSec}
           max={LIMITS.maxPrepareSec}
           value={draft.prepareSec}
           onChange={(seconds) => dispatch({ type: 'setPrepare', seconds })}
@@ -336,7 +338,9 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
       <Card>
         <View style={styles.rowBetween}>
           <ThemedText type="smallBold">Tempo total</ThemedText>
-          <ThemedText type="subtitle" accessibilityLabel={`Tempo total ${formatDuration(totals.totalSec)}`}>
+          <ThemedText
+            type="subtitle"
+            accessibilityLabel={`Tempo total ${formatDuration(totals.totalSec)}`}>
             {formatDuration(totals.totalSec)}
           </ThemedText>
         </View>
@@ -370,7 +374,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingLeft: Spacing.two,
   },
-  itemMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
+  itemMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    minHeight: 44,
+  },
   itemIndex: { width: 20, textAlign: 'center' },
   itemLabel: { flex: 1 },
   errors: { gap: Spacing.one },

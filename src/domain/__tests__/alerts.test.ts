@@ -102,7 +102,10 @@ describe('sons por exercício (sobrescrita na fase)', () => {
 
   it('exercício "silencioso" não toca som, mas ainda vibra', () => {
     const work = { ...phase('work'), soundOverride: 'silent' };
-    const commands = alertsForEvents([{ type: 'phaseStarted', phase: work }], DEFAULT_ALERT_SETTINGS);
+    const commands = alertsForEvents(
+      [{ type: 'phaseStarted', phase: work }],
+      DEFAULT_ALERT_SETTINGS,
+    );
     expect(commands.some((c) => c.type === 'sound')).toBe(false);
     expect(commands.some((c) => c.type === 'haptic')).toBe(true);
   });
@@ -123,9 +126,9 @@ describe('narração por voz', () => {
       .map((c) => (c.type === 'speak' ? c.text : ''));
 
   it('desligada por padrão', () => {
-    expect(speech(DEFAULT_ALERT_SETTINGS, [{ type: 'phaseStarted', phase: phase('work') }])).toEqual(
-      [],
-    );
+    expect(
+      speech(DEFAULT_ALERT_SETTINGS, [{ type: 'phaseStarted', phase: phase('work') }]),
+    ).toEqual([]);
   });
 
   it('anuncia exercício, descanso com próximo e fim', () => {
@@ -143,9 +146,9 @@ describe('narração por voz', () => {
 
   it('sem "anunciar próximo" omite o próximo exercício', () => {
     const rest = { ...phase('rest'), nextWorkLabel: 'Agachamento' };
-    expect(speech({ ...voice, announceNext: false }, [{ type: 'phaseStarted', phase: rest }])).toEqual(
-      ['Descanso.'],
-    );
+    expect(
+      speech({ ...voice, announceNext: false }, [{ type: 'phaseStarted', phase: rest }]),
+    ).toEqual(['Descanso.']);
   });
 
   it('usa o idioma configurado e não fala a contagem', () => {
@@ -158,6 +161,40 @@ describe('narração por voz', () => {
     );
     expect(commands.filter((c) => c.type === 'speak')).toEqual([
       { type: 'speak', text: 'Desaquecimento.', lang: 'en-US' },
+    ]);
+  });
+});
+
+describe('alertsForEvents — som da preparação', () => {
+  it('por padrão a preparação não tem som (só vibração leve)', () => {
+    const commands = alertsForEvents(
+      [{ type: 'phaseStarted', phase: phase('prepare') }],
+      DEFAULT_ALERT_SETTINGS,
+    );
+    expect(commands.filter((c) => c.type === 'sound')).toEqual([]);
+    expect(commands).toContainEqual({ type: 'haptic', style: 'light' });
+  });
+
+  it('com som configurado, toca ao começar a preparação; trabalho e descanso seguem os seus', () => {
+    const settings: AlertSettings = {
+      ...DEFAULT_ALERT_SETTINGS,
+      sounds: {
+        ...DEFAULT_ALERT_SETTINGS.sounds,
+        prepareStart: 'meu-aquecimento',
+        workStart: 'minha-corneta',
+        restStart: 'minha-campainha',
+      },
+    };
+    expect(
+      sounds(settings, [
+        { type: 'phaseStarted', phase: phase('prepare') },
+        { type: 'phaseStarted', phase: phase('work') },
+        { type: 'phaseStarted', phase: phase('rest') },
+      ]),
+    ).toEqual([
+      'prepareStart:meu-aquecimento',
+      'workStart:minha-corneta',
+      'restStart:minha-campainha',
     ]);
   });
 });

@@ -39,13 +39,15 @@ describe('WorkoutListScreen', () => {
   it('lista treinos com tempo total, ciclos e exercícios', async () => {
     await setup(true);
     expect(await screen.findByText('Treino de perna')).toBeTruthy();
-    expect(screen.getByText('3min50s')).toBeTruthy();
+    expect(screen.getByText('3min56s')).toBeTruthy();
     expect(screen.getByText('1 ciclo · 5 exercícios')).toBeTruthy();
   });
 
   it('tocar no cartão abre o detalhe', async () => {
     const services = await setup(true);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Abrir treino Treino de perna' }));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Abrir treino Treino de perna' }),
+    );
     const id = services.workoutsStore.getState().summaries[0].id;
     expect(mockRouter.push).toHaveBeenCalledWith(`/workout/${id}`);
   });

@@ -13,9 +13,17 @@ export function planExampleWorkout(overrides: Partial<Workout> = {}): Workout {
   });
   cycle.items[2] = { ...cycle.items[2], workSec: 60 };
   return createWorkout(
-    { name: 'Treino de perna', prepareSec: 10, cooldownSec: 0, cycles: [cycle], ...overrides },
+    { name: 'Treino de perna', prepareSec: 16, cooldownSec: 0, cycles: [cycle], ...overrides },
     1_000,
   );
 }
 
 export { createCycle, createItem, createWorkout };
+
+/**
+ * Exemplo do plano com 10 s de preparação, para testes de tempo do motor e do player.
+ * O motor toca qualquer preparação; o mínimo de 16 s é regra de cadastro (validação,
+ * editor e migração), coberta nos testes de domínio.
+ */
+export const timingWorkout = (overrides: Partial<Workout> = {}) =>
+  planExampleWorkout({ prepareSec: 10, ...overrides });

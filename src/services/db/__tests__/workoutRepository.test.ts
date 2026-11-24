@@ -70,9 +70,9 @@ describe('workoutRepository', () => {
       favorite: true,
       cycleCount: 1,
       exerciseCount: 5,
-      totalSec: 230,
+      totalSec: 236,
     });
-    expect(summaries[1]).toMatchObject({ id: b.id, totalSec: 240 });
+    expect(summaries[1]).toMatchObject({ id: b.id, totalSec: 246 });
   });
 
   it('remove o treino em cascata', async () => {

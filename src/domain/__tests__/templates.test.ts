@@ -4,11 +4,11 @@ import { workoutTotals } from '../workout';
 
 describe('modelos de treino', () => {
   it.each([
-    ['tabata', 240],
-    ['hiit', 10 + 10 * 40 + 9 * 20],
-    ['emom', 10 + 10 * 60],
-    ['amrap', 10 + 12 * 60],
-    ['circuit', 10 + 15 * 45 + 14 * 15],
+    ['tabata', 16 + 8 * 20 + 7 * 10],
+    ['hiit', 16 + 10 * 40 + 9 * 20],
+    ['emom', 16 + 10 * 60],
+    ['amrap', 16 + 12 * 60],
+    ['circuit', 16 + 15 * 45 + 14 * 15],
   ] as const)('%s tem a duração esperada e é válido', (type, total) => {
     const workout = createFromTemplate(type, 0);
     expect(workout.type).toBe(type);

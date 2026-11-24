@@ -147,13 +147,32 @@ describe('migração 2', () => {
     expect(cfgCols.map((c) => c.name)).toContain('halfway_sound_id');
   });
 
+  it('versão 4: som da preparação e treinos antigos sobem para 16 s de preparação', async () => {
+    const db = createTestDatabase();
+    await migrate(db, migrations.slice(0, 3));
+    await db.runAsync(
+      `INSERT INTO workouts (id, name, prepare_sec, created_at, updated_at)
+       VALUES ('curto', 'Curto', 10, 0, 0), ('longo', 'Longo', 30, 0, 0)`,
+    );
+    expect(await migrate(db)).toEqual([4]);
+    const rows = await db.getAllAsync<{ id: string; prepare_sec: number }>(
+      'SELECT id, prepare_sec FROM workouts ORDER BY id',
+    );
+    expect(rows).toEqual([
+      { id: 'curto', prepare_sec: 16 },
+      { id: 'longo', prepare_sec: 30 },
+    ]);
+    const cfgCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sound_configs)');
+    expect(cfgCols.map((c) => c.name)).toContain('prepare_start_sound_id');
+  });
+
   it('atualiza um banco que estava na versão 1 sem perder dados', async () => {
     const db = createTestDatabase();
     await migrate(db, migrations.slice(0, 1));
     await db.runAsync(
       "INSERT INTO workouts (id, name, created_at, updated_at) VALUES ('w1', 'Antigo', 0, 0)",
     );
-    expect(await migrate(db)).toEqual([2, 3]);
+    expect(await migrate(db)).toEqual([2, 3, 4]);
     const row = await db.getFirstAsync<{ name: string }>(
       "SELECT name FROM workouts WHERE id = 'w1'",
     );

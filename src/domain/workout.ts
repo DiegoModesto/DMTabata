@@ -42,7 +42,7 @@ export type Workout = {
 };
 
 export const DEFAULTS = {
-  prepareSec: 10,
+  prepareSec: 16,
   cooldownSec: 0,
   restBetweenCyclesSec: 60,
   workSec: 30,
@@ -54,6 +54,8 @@ export const LIMITS = {
   nameMaxLength: 60,
   minWorkSec: 1,
   maxPhaseSec: 3600,
+  /** Preparação mínima: tempo para se posicionar (e tocar o som de preparação inteiro). */
+  minPrepareSec: 16,
   maxPrepareSec: 300,
   minRepeat: 1,
   maxRepeat: 99,

@@ -34,7 +34,9 @@ export type EditorAction =
       type: 'updateItem';
       cycleId: string;
       itemId: string;
-      changes: Partial<Pick<CycleItem, 'label' | 'workSec' | 'restSec' | 'workSoundId' | 'restSoundId'>>;
+      changes: Partial<
+        Pick<CycleItem, 'label' | 'workSec' | 'restSec' | 'workSoundId' | 'restSoundId'>
+      >;
     }
   | { type: 'resetItemTimes'; cycleId: string; itemId: string }
   | { type: 'removeItem'; cycleId: string; itemId: string }
@@ -77,7 +79,10 @@ export function editorReducer(workout: Workout, action: EditorAction): Workout {
     case 'setName':
       return { ...workout, name: action.name.slice(0, LIMITS.nameMaxLength) };
     case 'setPrepare':
-      return { ...workout, prepareSec: clampSec(action.seconds, 0, LIMITS.maxPrepareSec) };
+      return {
+        ...workout,
+        prepareSec: clampSec(action.seconds, LIMITS.minPrepareSec, LIMITS.maxPrepareSec),
+      };
     case 'setCooldown':
       return { ...workout, cooldownSec: clampSec(action.seconds) };
     case 'setRestBetweenCycles':
@@ -182,10 +187,8 @@ export function editorReducer(workout: Workout, action: EditorAction): Workout {
               changes.restSec !== undefined
                 ? overrideValue(changes.restSec, cycle.defaultRestSec, 0)
                 : item.restSec,
-            workSoundId:
-              changes.workSoundId !== undefined ? changes.workSoundId : item.workSoundId,
-            restSoundId:
-              changes.restSoundId !== undefined ? changes.restSoundId : item.restSoundId,
+            workSoundId: changes.workSoundId !== undefined ? changes.workSoundId : item.workSoundId,
+            restSoundId: changes.restSoundId !== undefined ? changes.restSoundId : item.restSoundId,
           };
         }),
       }));

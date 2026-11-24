@@ -27,9 +27,19 @@ export function validateWorkout(workout: Workout): ValidationError[] {
 
   if (!name) errors.push({ path: 'name', message: 'Dê um nome ao treino.' });
   else if (name.length > LIMITS.nameMaxLength)
-    errors.push({ path: 'name', message: `Nome com no máximo ${LIMITS.nameMaxLength} caracteres.` });
+    errors.push({
+      path: 'name',
+      message: `Nome com no máximo ${LIMITS.nameMaxLength} caracteres.`,
+    });
 
-  checkRange(errors, 'prepareSec', workout.prepareSec, 0, LIMITS.maxPrepareSec, 'Preparação');
+  checkRange(
+    errors,
+    'prepareSec',
+    workout.prepareSec,
+    LIMITS.minPrepareSec,
+    LIMITS.maxPrepareSec,
+    'Preparação',
+  );
   checkRange(errors, 'cooldownSec', workout.cooldownSec, 0, LIMITS.maxPhaseSec, 'Desaquecimento');
   checkRange(
     errors,

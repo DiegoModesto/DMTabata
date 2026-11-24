@@ -6,7 +6,7 @@ import { createNoopPhaseNotifier } from '@/services/notifications/phaseNotifier'
 
 import { createSilentAlertPlayer } from '@/services/audio/alertPlayer';
 import { mockRouter, resetRouterMock } from '@/test/expoRouterMock';
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 import { createTestServices, renderWithServices } from '@/test/renderWithServices';
 
 import { PlayerScreen } from '../player-screen';
@@ -37,21 +37,30 @@ describe('PlayerScreen — temporizador com sons', () => {
     }
   }
 
-  async function setup(customize?: (services: Awaited<ReturnType<typeof createTestServices>>, workout: ReturnType<typeof planExampleWorkout>) => Promise<void>) {
+  async function setup(
+    customize?: (
+      services: Awaited<ReturnType<typeof createTestServices>>,
+      workout: ReturnType<typeof timingWorkout>,
+    ) => Promise<void>,
+  ) {
     jest.useFakeTimers();
     now = 0;
     const alertPlayer = createSilentAlertPlayer();
     const notifier = createNoopPhaseNotifier();
     const services = await createTestServices({ alertPlayer, clock, phaseNotifier: notifier });
-    const workout = planExampleWorkout();
+    const workout = timingWorkout();
     await services.workouts.save(workout, null);
     await customize?.(services, workout);
     await renderWithServices(<PlayerScreen workoutId={workout.id} />, services);
     await screen.findByText('PREPARAR');
     const sounds = () =>
-      alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.slot : ''));
+      alertPlayer.executed
+        .filter((c) => c.type === 'sound')
+        .map((c) => (c.type === 'sound' ? c.slot : ''));
     const soundIds = () =>
-      alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.soundId : ''));
+      alertPlayer.executed
+        .filter((c) => c.type === 'sound')
+        .map((c) => (c.type === 'sound' ? c.soundId : ''));
     return { alertPlayer, sounds, soundIds, services, workout, notifier };
   }
 
@@ -152,7 +161,12 @@ describe('PlayerScreen — temporizador com sons', () => {
     await advance(220_000);
     await screen.findByRole('button', { name: 'Avaliar treino' });
     const [session] = await services.sessions.list({ workoutId: workout.id });
-    expect(session).toMatchObject({ status: 'completed', workSec: 180, restSec: 40, phasesCompleted: 10 });
+    expect(session).toMatchObject({
+      status: 'completed',
+      workSec: 180,
+      restSec: 40,
+      phasesCompleted: 10,
+    });
 
     await fireEvent.press(screen.getByRole('button', { name: 'Avaliar treino' }));
     expect(mockRouter.replace).toHaveBeenCalledWith(`/session/${session.id}/feedback`);
@@ -262,7 +276,7 @@ describe('PlayerScreen — temporizador com sons', () => {
     }
     await fireEvent.press(screen.getByRole('button', { name: 'Remover um round' }));
     expect(screen.getByLabelText('2 rounds')).toBeTruthy();
-    await advance(10_000 + 12 * 60_000);
+    await advance(16_000 + 12 * 60_000);
     await screen.findByRole('button', { name: 'Avaliar treino' });
     const [session] = await services.sessions.list({ workoutId: amrap.id });
     expect(session.roundsDone).toBe(2);
