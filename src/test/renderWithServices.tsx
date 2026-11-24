@@ -11,7 +11,8 @@ import { createMigratedTestDatabase } from './sqliteTestDatabase';
 export async function createTestServices(overrides: ServiceOverrides = {}): Promise<Services> {
   const db = await createMigratedTestDatabase();
   await seed(db);
-  const services = createServices(db, overrides);
+  // Sem treinos embutidos por padrão: os testes da biblioteca passam a lista explicitamente.
+  const services = createServices(db, { bundledWorkouts: [], ...overrides });
   await services.authStore.getState().restore();
   return services;
 }

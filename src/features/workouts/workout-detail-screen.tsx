@@ -26,7 +26,7 @@ import { useServices } from '@/providers/services-provider';
 export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
   const router = useRouter();
   const theme = useTheme();
-  const { workouts, workoutsStore, sessionService } = useServices();
+  const { workouts, workoutsStore, sessionService, library } = useServices();
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [history, setHistory] = useState<StatsSummary | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -62,6 +62,28 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
     );
   }
   if (!workout || !totals || !timeline) return <Screen title="Treino">{null}</Screen>;
+
+  const share = async () => {
+    try {
+      const { droppedSounds } = await library.shareWorkout(workout.id);
+      if (droppedSounds > 0) {
+        Alert.alert(
+          'Treino compartilhado',
+          `${droppedSounds} som(ns) importado(s) por você não vão no arquivo — quem receber usa os sons padrão nesses momentos.`,
+        );
+      }
+    } catch {
+      Alert.alert('Não foi possível compartilhar', 'Tente novamente.');
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    const template = await library.saveAsTemplate(workout.id);
+    Alert.alert(
+      'Modelo salvo',
+      `"${template.name}" está em Novo treino → Meus modelos. Crie quantas cópias quiser a partir dele.`,
+    );
+  };
 
   const confirmDelete = () =>
     Alert.alert('Excluir treino?', `"${workout.name}" será removido.`, [
@@ -138,7 +160,9 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
                   {cycle.repeatCount > 1 ? ` · ${cycle.repeatCount}x` : ''}
                 </ThemedText>
               </View>
-              <ThemedText type="smallBold">{formatDuration(totals.cycleDurationsSec[c])}</ThemedText>
+              <ThemedText type="smallBold">
+                {formatDuration(totals.cycleDurationsSec[c])}
+              </ThemedText>
               <ThemedText type="small">{open ? '▾' : '▸'}</ThemedText>
             </Pressable>
             {open
@@ -180,6 +204,22 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
           variant="secondary"
           style={styles.flex}
           onPress={() => router.push(`/workout/${workout.id}/sounds`)}
+        />
+      </View>
+      <View style={styles.actions}>
+        <Button
+          title="Compartilhar"
+          icon="share"
+          variant="secondary"
+          style={styles.flex}
+          onPress={share}
+        />
+        <Button
+          title="Salvar como modelo"
+          icon="template"
+          variant="secondary"
+          style={styles.flex}
+          onPress={saveAsTemplate}
         />
       </View>
       <View style={styles.actions}>

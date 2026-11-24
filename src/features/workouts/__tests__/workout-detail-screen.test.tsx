@@ -1,7 +1,9 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import { createCycle } from '@/domain/workout';
 import { mockRouter, resetRouterMock } from '@/test/expoRouterMock';
+import { createFakeBackupIO } from '@/test/fakeBackupIO';
 import { planExampleWorkout } from '@/test/factories';
 import { createTestServices, renderWithServices } from '@/test/renderWithServices';
 
@@ -50,5 +52,36 @@ describe('WorkoutDetailScreen — pré-treino', () => {
   it('treino inexistente mostra aviso', async () => {
     await renderWithServices(<WorkoutDetailScreen workoutId="nada" />);
     expect(await screen.findByText('Treino não encontrado.')).toBeTruthy();
+  });
+});
+
+describe('WorkoutDetailScreen — compartilhar e salvar como modelo', () => {
+  beforeEach(resetRouterMock);
+  afterEach(() => jest.restoreAllMocks());
+
+  async function setupShare() {
+    const fake = createFakeBackupIO();
+    const services = await createTestServices({ backupIO: fake.io });
+    const workout = await services.workouts.save(planExampleWorkout({ name: 'Boxe' }), null);
+    await renderWithServices(<WorkoutDetailScreen workoutId={workout.id} />, services);
+    await screen.findByRole('button', { name: 'Compartilhar' });
+    return { services, fake, workout };
+  }
+
+  it('"Compartilhar" gera o arquivo do treino pelo menu do sistema', async () => {
+    const { fake } = await setupShare();
+    await fireEvent.press(screen.getByRole('button', { name: 'Compartilhar' }));
+    await waitFor(() => expect(fake.state.shared).toHaveLength(1));
+    expect(fake.state.shared[0].fileName).toBe('boxe.dmtabata');
+  });
+
+  it('"Salvar como modelo" guarda em Meus modelos e avisa', async () => {
+    const { services } = await setupShare();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await fireEvent.press(screen.getByRole('button', { name: 'Salvar como modelo' }));
+    await waitFor(() =>
+      expect(alert).toHaveBeenCalledWith('Modelo salvo', expect.stringContaining('Meus modelos')),
+    );
+    expect((await services.library.templates()).map((t) => t.name)).toEqual(['Boxe']);
   });
 });

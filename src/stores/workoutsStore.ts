@@ -21,14 +21,17 @@ export function createWorkoutsStore(deps: {
   workouts: WorkoutRepository;
   getUserId: () => string | null;
   now?: () => number;
+  /** Executado antes de listar (ex.: adicionar treinos embutidos na primeira vez). */
+  beforeLoad?: () => Promise<void>;
 }) {
-  const { workouts, getUserId, now = Date.now } = deps;
+  const { workouts, getUserId, now = Date.now, beforeLoad } = deps;
 
   return createStore<WorkoutsState>()((set, get) => ({
     summaries: [],
     loaded: false,
 
     async load() {
+      await beforeLoad?.();
       const summaries = await workouts.listSummaries(getUserId());
       set({ summaries, loaded: true });
     },

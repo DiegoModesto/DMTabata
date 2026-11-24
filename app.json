@@ -10,7 +10,39 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.dmtabata.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Treino DMTabata",
+            "CFBundleTypeRole": "Editor",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": [
+              "com.dmtabata.workout"
+            ]
+          }
+        ],
+        "UTExportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.dmtabata.workout",
+            "UTTypeDescription": "Treino DMTabata",
+            "UTTypeConformsTo": [
+              "public.json",
+              "public.data",
+              "public.content"
+            ],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "dmtabata"
+              ],
+              "public.mime-type": [
+                "application/x-dmtabata"
+              ]
+            }
+          }
+        ],
+        "LSSupportsOpeningDocumentsInPlace": false
+      }
     },
     "android": {
       "adaptiveIcon": {

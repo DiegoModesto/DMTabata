@@ -13,6 +13,8 @@ const ICONS = {
   plus: { ios: 'plus', android: 'add', web: 'add' },
   minus: { ios: 'minus', android: 'remove', web: 'remove' },
   mic: { ios: 'mic.fill', android: 'mic', web: 'mic' },
+  share: { ios: 'square.and.arrow.up', android: 'share', web: 'share' },
+  template: { ios: 'square.on.square', android: 'content_copy', web: 'content_copy' },
   record: { ios: 'record.circle', android: 'radio_button_checked', web: 'radio_button_checked' },
   redo: { ios: 'arrow.counterclockwise', android: 'replay', web: 'replay' },
   upload: { ios: 'square.and.arrow.down', android: 'file_download', web: 'file_download' },

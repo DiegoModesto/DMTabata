@@ -1,0 +1,176 @@
+{
+  "app": "dmtabata",
+  "kind": "workout",
+  "version": 1,
+  "exportedAt": 1795546345174,
+  "workout": {
+    "name": "Boxe Sequenciado",
+    "type": "hiit",
+    "prepareSec": 17,
+    "cooldownSec": 0,
+    "restBetweenCyclesSec": 60,
+    "cycles": [
+      {
+        "name": "Aquecimento",
+        "repeatCount": 1,
+        "defaultWorkSec": 30,
+        "defaultRestSec": 15,
+        "skipLastRest": true,
+        "items": [
+          {
+            "label": "Abdômen banco",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Passada Aérea",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Troca de pés aéreo",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Polichinelo com Base Pedra",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          }
+        ]
+      },
+      {
+        "name": "Cruzados",
+        "repeatCount": 1,
+        "defaultWorkSec": 40,
+        "defaultRestSec": 15,
+        "skipLastRest": true,
+        "items": [
+          {
+            "label": "Cruzado Direito",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Cruzado Esquerdo",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Cruzado Dir. Duplo",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Cruzado Esq. Duplo",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          }
+        ]
+      },
+      {
+        "name": "Ganchos",
+        "repeatCount": 1,
+        "defaultWorkSec": 40,
+        "defaultRestSec": 15,
+        "skipLastRest": false,
+        "items": [
+          {
+            "label": "Gancho Direito",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Gancho Esquerdo",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Gancho Direito",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Gancho Esquerdo",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          }
+        ]
+      },
+      {
+        "name": "Esquivas",
+        "repeatCount": 2,
+        "defaultWorkSec": 40,
+        "defaultRestSec": 15,
+        "skipLastRest": true,
+        "items": [
+          {
+            "label": "Flip Horinzontal",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Slip Horizontal",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Deslize para Trás",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Pêndulo estático",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          },
+          {
+            "label": "Pêndulo Soviético",
+            "workSec": null,
+            "restSec": null,
+            "workSoundId": null,
+            "restSoundId": null
+          }
+        ]
+      }
+    ]
+  },
+  "sounds": {
+    "sounds": {
+      "prepareStart": "pack-vamo-acordar",
+      "cycleEnd": "pack-para-para"
+    }
+  }
+}

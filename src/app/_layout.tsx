@@ -48,6 +48,7 @@ function RootNavigator() {
         <Stack.Screen name="workout/[id]/stats" options={detail} />
         <Stack.Screen name="session/[id]/index" options={detail} />
         <Stack.Screen name="session/[id]/feedback" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="import" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="player/[id]"
           options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
