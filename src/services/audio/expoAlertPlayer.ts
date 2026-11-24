@@ -7,6 +7,7 @@ import { isBuiltinSoundId } from '@/domain/sounds';
 
 import type { AlertPlayer, AudioOptions } from './alertPlayer';
 import { BUILTIN_SOUND_SOURCES } from './builtinSoundSources';
+import { createMusicDucking } from './musicDucking';
 
 function playHaptic(style: HapticStyle) {
   const run = () => {
@@ -50,10 +51,10 @@ export function createExpoAlertPlayer(): AlertPlayer {
   let currentSurprise: AudioPlayer | null = null;
 
   function stopSurprise() {
-    setMusicDucked(false);
     if (!currentSurprise) return;
     const player = currentSurprise;
     currentSurprise = null;
+    ducking.ended(player);
     try {
       player.pause();
       void player.seekTo(0).catch(() => {});
@@ -75,15 +76,11 @@ export function createExpoAlertPlayer(): AlertPlayer {
     }
   }
 
-  // ---------- Música de fundo (loop, abaixo dos alertas) ----------
-  /** Quanto a música abaixa enquanto um som surpresa toca. */
-  const MUSIC_DUCK = 0.4;
+  // ---------- Música de fundo (loop; abaixa enquanto outro áudio toca) ----------
   let music: { player: AudioPlayer; volume: number } | null = null;
-
-  function setMusicDucked(ducked: boolean) {
-    if (!music) return;
-    music.player.volume = ducked ? music.volume * MUSIC_DUCK : music.volume;
-  }
+  const ducking = createMusicDucking((factor) => {
+    if (music) music.player.volume = music.volume * factor;
+  });
 
   function startMusic(soundId: SoundId, volume: number) {
     stopMusic();
@@ -92,7 +89,7 @@ export function createExpoAlertPlayer(): AlertPlayer {
     // Player próprio: não compartilha com a pré-escuta nem com os alertas.
     const player = createAudioPlayer(source);
     player.loop = true;
-    player.volume = volume;
+    player.volume = volume * ducking.factor();
     player.play();
     music = { player, volume };
   }
@@ -101,6 +98,7 @@ export function createExpoAlertPlayer(): AlertPlayer {
     if (!music) return;
     const { player } = music;
     music = null;
+    ducking.reset();
     try {
       player.pause();
       player.remove();
@@ -120,7 +118,18 @@ export function createExpoAlertPlayer(): AlertPlayer {
     const source = resolveSource(soundId);
     if (source === null) return null;
     const player = createAudioPlayer(source);
+    // Quando um alerta termina, a música pode voltar ao volume cheio.
+    player.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish) ducking.ended(player);
+    });
     players.set(soundId, player);
+    return player;
+  }
+
+  /** Toca um alerta do treino (abaixa a música enquanto ele soa). */
+  function playAlert(soundId: SoundId, volume: number): AudioPlayer | null {
+    const player = play(soundId, volume);
+    if (player && music) ducking.started(player);
     return player;
   }
 
@@ -154,30 +163,31 @@ export function createExpoAlertPlayer(): AlertPlayer {
         if (command.type === 'sound') {
           if (command.channel === 'surprise') {
             stopSurprise();
-            const player = play(command.soundId, command.volume);
-            currentSurprise = player;
-            if (player) {
-              // A música fica por baixo enquanto a surpresa toca.
-              setMusicDucked(true);
-              const sub = player.addListener('playbackStatusUpdate', (status) => {
-                if (!status.didJustFinish) return;
-                sub.remove();
-                if (currentSurprise === player) {
-                  currentSurprise = null;
-                  setMusicDucked(false);
-                }
-              });
-            }
-          } else play(command.soundId, command.volume);
+            currentSurprise = playAlert(command.soundId, command.volume);
+          } else playAlert(command.soundId, command.volume);
         } else if (command.type === 'stopChannel') stopSurprise();
         else if (command.type === 'music') {
           if (command.action === 'start') startMusic(command.soundId, command.volume);
           else if (command.action === 'pause') music?.player.pause();
           else if (command.action === 'resume') music?.player.play();
-          else stopMusic();
+          else if (command.action === 'duck') ducking.hold();
+          else if (command.action === 'unduck') {
+            ducking.release();
+            ducking.prune((p) => (p as AudioPlayer).playing);
+          } else stopMusic();
         } else if (command.type === 'haptic') playHaptic(command.style);
-        else
-          Speech.speak(command.text, { language: command.lang, useApplicationAudioSession: true });
+        else {
+          const token = {};
+          if (music) ducking.started(token);
+          const done = () => ducking.ended(token);
+          Speech.speak(command.text, {
+            language: command.lang,
+            useApplicationAudioSession: true,
+            onDone: done,
+            onStopped: done,
+            onError: done,
+          });
+        }
       }
     },
     preview(soundId, volume = 1, onEnd) {

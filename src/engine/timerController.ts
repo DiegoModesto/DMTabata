@@ -46,6 +46,22 @@ export function createTimerController(
   const stopSurprise: AlertCommand = { type: 'stopChannel', channel: 'surprise' };
   const stopMusic: AlertCommand = { type: 'music', action: 'stop' };
 
+  // A música fica abaixada dos segundos finais (contagem) até a próxima fase começar.
+  let musicHeld = false;
+  function musicDuckCommands(events: TimerEvent[]): AlertCommand[] {
+    if (!alertSettings.backgroundMusicId) return [];
+    const out: AlertCommand[] = [];
+    if (musicHeld && events.some((e) => e.type === 'phaseStarted' || e.type === 'finished')) {
+      musicHeld = false;
+      out.push({ type: 'music', action: 'unduck' });
+    }
+    if (!musicHeld && events.some((e) => e.type === 'countdown')) {
+      musicHeld = true;
+      out.push({ type: 'music', action: 'duck' });
+    }
+    return out;
+  }
+
   /** Comando de música de fundo para uma ação do usuário, se houver música. */
   function musicCommand(action: TimerAction): AlertCommand | null {
     const id = alertSettings.backgroundMusicId;
@@ -85,7 +101,11 @@ export function createTimerController(
     const next = snapshot(state, now, timeline);
     recorder.observe(next, now);
     const events = diffEvents(last, next, alertSettings, state.stoppedEarly);
-    const commands = [...surpriseCommands(last, next), ...alertsForEvents(events, alertSettings)];
+    const commands = [
+      ...musicDuckCommands(events),
+      ...surpriseCommands(last, next),
+      ...alertsForEvents(events, alertSettings),
+    ];
     // Ao terminar, a trilha surpresa e a música param antes do som de fim.
     if (events.some((e) => e.type === 'finished')) {
       commands.unshift(stopSurprise);

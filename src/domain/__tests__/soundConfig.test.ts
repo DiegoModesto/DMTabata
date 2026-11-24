@@ -126,8 +126,8 @@ describe('sons surpresa nas camadas de configuração', () => {
 });
 
 describe('música de fundo nas camadas', () => {
-  it('padrão: sem música, volume 35% (abaixo dos alertas)', () => {
-    expect(resolveAlertSettings()).toMatchObject({ backgroundMusicId: null, musicVolume: 0.35 });
+  it('padrão: sem música, volume máximo (abaixa só quando outro áudio toca)', () => {
+    expect(resolveAlertSettings()).toMatchObject({ backgroundMusicId: null, musicVolume: 1 });
   });
 
   it('treino herda a música global, troca por outra ou desliga com "silencioso"', () => {
