@@ -36,6 +36,9 @@ function RootNavigator() {
         <Stack.Screen name="workout/[id]/edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout/[id]/sounds" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="sounds" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="workout/[id]/stats" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="session/[id]/index" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="session/[id]/feedback" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="player/[id]"
           options={{ presentation: 'fullScreenModal', gestureEnabled: false }}

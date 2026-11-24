@@ -5,11 +5,13 @@ import { createSilentAlertPlayer, type AlertPlayer } from './audio/alertPlayer';
 import type { SoundImporter } from './audio/soundImporter';
 import { createMockAuthService } from './auth/mockAuthService';
 import type { SqlDatabase } from './db/database';
+import { createSessionRepository } from './db/repositories/sessionRepository';
 import { createSettingsRepository } from './db/repositories/settingsRepository';
 import { createSoundConfigRepository } from './db/repositories/soundConfigRepository';
 import { createSoundRepository } from './db/repositories/soundRepository';
 import { createUserRepository } from './db/repositories/userRepository';
 import { createWorkoutRepository } from './db/repositories/workoutRepository';
+import { createSessionService } from './sessions/sessionService';
 import { createSoundService } from './sounds/soundService';
 
 export type ServiceOverrides = {
@@ -17,6 +19,8 @@ export type ServiceOverrides = {
   soundImporter?: SoundImporter;
   /** Relógio monotônico em ms (para o temporizador). */
   clock?: () => number;
+  /** Data/hora atual (epoch ms) para registros e estatísticas. */
+  now?: () => number;
 };
 
 const unavailableImporter: SoundImporter = {
@@ -52,6 +56,8 @@ export function createServices(db: SqlDatabase, overrides: ServiceOverrides = {}
     importer: overrides.soundImporter ?? unavailableImporter,
     alertPlayer,
   });
+  const sessions = createSessionRepository(db);
+  const sessionService = createSessionService({ sessions, now: overrides.now });
   const workoutsStore = createWorkoutsStore({
     workouts,
     getUserId: () => authStore.getState().user?.id ?? null,
@@ -67,6 +73,8 @@ export function createServices(db: SqlDatabase, overrides: ServiceOverrides = {}
     workoutsStore,
     sounds,
     soundConfigs,
+    sessions,
+    sessionService,
     soundService,
     alertPlayer,
     clock: overrides.clock ?? defaultClock,

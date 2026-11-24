@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 
 import { createSilentAlertPlayer } from '@/services/audio/alertPlayer';
@@ -9,6 +9,15 @@ import { createTestServices, renderWithServices } from '@/test/renderWithService
 import { PlayerScreen } from '../player-screen';
 
 jest.mock('expo-router', () => require('@/test/expoRouterMock'));
+
+async function waitForSessions(
+  services: Awaited<ReturnType<typeof createTestServices>>,
+  expected: number,
+) {
+  await waitFor(async () =>
+    expect(await services.db.getAllAsync('SELECT id FROM sessions')).toHaveLength(expected),
+  );
+}
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }));
 
 describe('PlayerScreen — temporizador com sons', () => {
@@ -39,7 +48,7 @@ describe('PlayerScreen — temporizador com sons', () => {
       alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.slot : ''));
     const soundIds = () =>
       alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.soundId : ''));
-    return { alertPlayer, sounds, soundIds };
+    return { alertPlayer, sounds, soundIds, services, workout };
   }
 
   beforeEach(resetRouterMock);
@@ -126,6 +135,54 @@ describe('PlayerScreen — temporizador com sons', () => {
       { type: 'speak', text: 'Prepare-se. Próximo: Polichinelo.', lang: 'pt-BR' },
       { type: 'speak', text: 'Vai! Polichinelo.', lang: 'pt-BR' },
     ]);
+  });
+
+  it('registra a sessão: em andamento durante o treino e concluída ao final', async () => {
+    const { services, workout } = await setup();
+    await advance(15_000);
+    const open = await services.db.getAllAsync<{ status: string; actual_work_sec: number }>(
+      'SELECT status, actual_work_sec FROM sessions',
+    );
+    expect(open).toEqual([{ status: 'in_progress', actual_work_sec: expect.any(Number) }]);
+
+    await advance(220_000);
+    await screen.findByRole('button', { name: 'Avaliar treino' });
+    const [session] = await services.sessions.list({ workoutId: workout.id });
+    expect(session).toMatchObject({ status: 'completed', workSec: 180, restSec: 40, phasesCompleted: 10 });
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Avaliar treino' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith(`/session/${session.id}/feedback`);
+  });
+
+  it('parar no preparo não registra sessão nem oferece avaliação', async () => {
+    const { services } = await setup();
+    const alert = jest.spyOn(Alert, 'alert');
+    await advance(2_000);
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
+    await act(async () => {
+      alert.mock.calls[0][2]!.find((o) => o.text === 'Parar')!.onPress!();
+    });
+    await screen.findByText('Treino interrompido');
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+    });
+    expect(screen.queryByRole('button', { name: 'Avaliar treino' })).toBeNull();
+    await waitForSessions(services, 0);
+    alert.mockRestore();
+  });
+
+  it('parar no meio registra sessão interrompida', async () => {
+    const { services } = await setup();
+    const alert = jest.spyOn(Alert, 'alert');
+    await advance(50_000);
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
+    await act(async () => {
+      alert.mock.calls[0][2]!.find((o) => o.text === 'Parar')!.onPress!();
+    });
+    await screen.findByRole('button', { name: 'Avaliar treino' });
+    const [session] = await services.sessions.list();
+    expect(session).toMatchObject({ status: 'abandoned', workSec: 30 });
+    alert.mockRestore();
   });
 
   it('parar pede confirmação e encerra como interrompido', async () => {

@@ -55,5 +55,7 @@ export function usePlayer(
     [apply, controller, clock],
   );
 
-  return { snapshot, dispatch, stoppedEarly };
+  const getLog = useCallback(() => controller.getLog(), [controller]);
+
+  return { snapshot, dispatch, stoppedEarly, getLog };
 }
