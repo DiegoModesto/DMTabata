@@ -37,14 +37,14 @@ Aplicativo mobile de treinos intervalados (Tabata, HIIT, EMOM, AMRAP e personali
 | Framework | **React Native + Expo (SDK atual, managed + dev client)** | Um código para iOS e Android; ecossistema maduro de áudio, notificações e haptics |
 | Linguagem | **TypeScript (strict)** | Segurança no modelo de dados e no motor do timer |
 | Navegação | **Expo Router** | Rotas baseadas em arquivos, deep links prontos |
-| Estado | **Zustand** (UI/sessão) + **XState** (motor do timer) | Timer é naturalmente uma máquina de estados; Zustand é leve para o resto |
-| Persistência | **expo-sqlite + Drizzle ORM** | Dados relacionais (treino → blocos → intervalos), migrações versionadas |
+| Estado | **Zustand** (UI/sessão) + **máquina de estados pura em TS** (motor do timer) | Timer é naturalmente uma máquina de estados; implementada como reducer puro, sem dependência, 100% testável |
+| Persistência | **expo-sqlite + SQL puro com migrações versionadas** (`PRAGMA user_version`) | Dados relacionais; repositórios testados contra SQLite real (better-sqlite3) sem ORM. *Decisão da Fase 0: Drizzle descartado para reduzir dependências.* |
 | Áudio | **expo-audio** | Bipes curtos, controle de audio session (ducking/mix) |
 | Voz | **expo-speech** (TTS) | Anúncios "Descanso", "Próximo: Burpee", "3, 2, 1" |
 | Vibração | **expo-haptics** | Feedback tátil nas transições |
 | Notificações | **expo-notifications** | Alertas agendados quando o app está em background |
 | Tela ligada | **expo-keep-awake** | Evita a tela apagar durante o treino |
-| Formulários | **react-hook-form + zod** | Validação dos editores de treino |
+| Formulários | Estado local + validação de domínio pura (`domain/validation.ts`) | Regras de validação testáveis sem UI |
 | Testes | **Jest + React Native Testing Library + Maestro (E2E)** | |
 | CI/CD | **EAS Build + EAS Submit + GitHub Actions** | |
 
