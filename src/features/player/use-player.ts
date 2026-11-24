@@ -16,9 +16,14 @@ export const TICK_MS = 100;
 export function usePlayer(
   timeline: Timeline,
   settings: AlertSettings,
-  deps: { alertPlayer: AlertPlayer; clock: () => number },
+  deps: {
+    alertPlayer: AlertPlayer;
+    clock: () => number;
+    /** Falso quando o app está em segundo plano (os alertas ficam com as notificações). */
+    shouldPlay?: () => boolean;
+  },
 ) {
-  const { alertPlayer, clock } = deps;
+  const { alertPlayer, clock, shouldPlay } = deps;
   // Controlador criado uma única vez por montagem (timeline fixa durante o treino).
   const [controller] = useState(() => createTimerController(timeline, settings));
 
@@ -27,11 +32,11 @@ export function usePlayer(
 
   const apply = useCallback(
     (update: ControllerUpdate) => {
-      if (update.commands.length) alertPlayer.execute(update.commands);
+      if (update.commands.length && (shouldPlay?.() ?? true)) alertPlayer.execute(update.commands);
       setStoppedEarly(controller.getState().stoppedEarly);
       setSnapshot(update.snapshot);
     },
-    [alertPlayer, controller],
+    [alertPlayer, controller, shouldPlay],
   );
 
   useEffect(() => {
@@ -56,6 +61,7 @@ export function usePlayer(
   );
 
   const getLog = useCallback(() => controller.getLog(), [controller]);
+  const peek = useCallback(() => controller.peek(clock()), [controller, clock]);
 
-  return { snapshot, dispatch, stoppedEarly, getLog };
+  return { snapshot, dispatch, stoppedEarly, getLog, peek };
 }

@@ -64,6 +64,9 @@ export function SessionDetailScreen({ sessionId }: { sessionId: string }) {
           Trabalho {formatDuration(session.workSec)} · Descanso {formatDuration(session.restSec)}
           {session.pausedSec ? ` · Pausa ${formatDuration(session.pausedSec)}` : ''}
         </ThemedText>
+        {session.roundsDone !== null ? (
+          <ThemedText type="smallBold">{session.roundsDone} rounds</ThemedText>
+        ) : null}
       </Card>
 
       <Card>

@@ -36,7 +36,12 @@ export function createSessionService(deps: {
      * Encerra a sessão. Sessões sem nenhum tempo de trabalho (ex.: parou durante o
      * preparo) são descartadas para não poluir as estatísticas.
      */
-    async finish(sessionId: string, log: SessionLog, stoppedEarly: boolean): Promise<FinishResult> {
+    async finish(
+      sessionId: string,
+      log: SessionLog,
+      stoppedEarly: boolean,
+      extras: { roundsDone?: number | null } = {},
+    ): Promise<FinishResult> {
       const summary = summarizeSession(log);
       if (summary.workMs < 1000) {
         await sessions.remove(sessionId);
@@ -47,6 +52,7 @@ export function createSessionService(deps: {
         endedAt: now(),
         log,
         summary,
+        roundsDone: extras.roundsDone ?? null,
       });
       return { sessionId, summary };
     },

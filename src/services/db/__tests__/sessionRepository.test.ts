@@ -63,6 +63,14 @@ describe('sessionRepository', () => {
     expect(phases[0].exerciseLabel).toBeNull();
   });
 
+  it('guarda os rounds contados no AMRAP', async () => {
+    const { sessions } = await setup();
+    const id = await sessions.start(workout, timeline.totalMs, 0);
+    const log = fullLog();
+    await sessions.finish(id, { status: 'completed', endedAt: 1, log, summary: summarizeSession(log), roundsDone: 7 });
+    expect((await sessions.getById(id))?.roundsDone).toBe(7);
+  });
+
   it('finalizar de novo substitui as fases (não duplica)', async () => {
     const { sessions } = await setup();
     const id = await sessions.start(workout, timeline.totalMs, 0);

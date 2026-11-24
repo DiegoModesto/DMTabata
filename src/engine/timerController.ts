@@ -47,6 +47,8 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
 
   return {
     getState: () => state,
+    /** Snapshot do instante sem registrar eventos (consulta). */
+    peek: (now: number) => snapshot(state, now, timeline),
     setSettings(next: AlertSettings) {
       alertSettings = next;
     },

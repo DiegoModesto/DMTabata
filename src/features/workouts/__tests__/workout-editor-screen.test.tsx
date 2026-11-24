@@ -1,7 +1,13 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 
 import { workoutTotals } from '@/domain/workout';
-import { mockRouter, resetRouterMock } from '@/test/expoRouterMock';
+import {
+  mockNavigation,
+  mockRouter,
+  preventRemoveState,
+  resetRouterMock,
+} from '@/test/expoRouterMock';
+import { Alert } from 'react-native';
 import { planExampleWorkout } from '@/test/factories';
 import { createTestServices, renderWithServices } from '@/test/renderWithServices';
 
@@ -105,6 +111,46 @@ describe('WorkoutEditorScreen — sons por exercício', () => {
     const items = (await services.workouts.getById(saved.id))!.cycles[0].items;
     expect(items[2].workSoundId).toBe('gong');
     expect(items.filter((i) => i.workSoundId !== null)).toHaveLength(1);
+  });
+});
+
+describe('WorkoutEditorScreen — modelos e alterações não salvas', () => {
+  beforeEach(resetRouterMock);
+
+  it('abre preenchido com o modelo escolhido (HIIT)', async () => {
+    await renderWithServices(<WorkoutEditorScreen template="hiit" />);
+    expect(screen.getByLabelText('Nome do treino').props.value).toBe('HIIT');
+    expect(screen.getByLabelText('Repetir ciclo: 10x')).toBeTruthy();
+    expect(screen.getByLabelText('Trabalho padrão: 0:40')).toBeTruthy();
+  });
+
+  it('sem alterações, sair não pede confirmação', async () => {
+    await renderWithServices(<WorkoutEditorScreen />);
+    expect(preventRemoveState.prevent).toBe(false);
+  });
+
+  it('com alterações, sair pede confirmação e só descarta se o usuário confirmar', async () => {
+    await renderWithServices(<WorkoutEditorScreen />);
+    await fireEvent.changeText(screen.getByLabelText('Nome do treino'), 'Rascunho');
+    expect(preventRemoveState.prevent).toBe(true);
+
+    const alert = jest.spyOn(Alert, 'alert');
+    const action = { type: 'GO_BACK' };
+    preventRemoveState.callback!({ data: { action } });
+    expect(alert.mock.calls[0][0]).toBe('Descartar alterações?');
+    expect(mockNavigation.dispatch).not.toHaveBeenCalled();
+    alert.mock.calls[0][2]!.find((o) => o.text === 'Descartar')!.onPress!();
+    expect(mockNavigation.dispatch).toHaveBeenCalledWith(action);
+    alert.mockRestore();
+  });
+
+  it('depois de salvar, sai sem pedir confirmação', async () => {
+    const services = await createTestServices();
+    await renderWithServices(<WorkoutEditorScreen />, services);
+    await fireEvent.changeText(screen.getByLabelText('Nome do treino'), 'Novo');
+    await fireEvent.press(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalled());
+    expect(preventRemoveState.prevent).toBe(false);
   });
 });
 

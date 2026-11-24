@@ -130,6 +130,13 @@ export function createWorkoutRepository(db: SqlDatabase, now: () => number = Dat
       return workout ?? null;
     },
 
+    /** Treinos completos do usuário (para backup). */
+    async listFull(userId: string | null): Promise<Workout[]> {
+      return userId
+        ? loadMany('WHERE user_id = ? ORDER BY created_at', [userId])
+        : loadMany('ORDER BY created_at', []);
+    },
+
     /** Lista do usuário: favoritos primeiro, depois os mais recentes. */
     async listSummaries(userId: string | null): Promise<WorkoutSummary[]> {
       const workouts = userId

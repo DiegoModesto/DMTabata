@@ -19,6 +19,7 @@ type SessionRow = {
   phases_completed: number;
   phases_skipped: number;
   phases_total: number;
+  rounds_done: number | null;
   rating: number | null;
   rpe: number | null;
   mood: Feedback['mood'];
@@ -62,6 +63,7 @@ function toRecord(row: SessionRow): SessionRecord {
     phasesCompleted: row.phases_completed,
     phasesSkipped: row.phases_skipped,
     phasesTotal: row.phases_total,
+    roundsDone: row.rounds_done,
     feedback: row.has_feedback
       ? {
           rating: row.rating,
@@ -112,15 +114,20 @@ export function createSessionRepository(db: SqlDatabase) {
     /** Fecha a sessão gravando totais e o log de cada fase, de forma atômica. */
     async finish(
       id: string,
-      input: { status: Exclude<SessionStatus, 'in_progress'>; endedAt: number; log: SessionLog; summary: SessionSummary },
+      input: {
+        status: Exclude<SessionStatus, 'in_progress'>;
+        endedAt: number;
+        log: SessionLog;
+        summary: SessionSummary;
+        roundsDone?: number | null;
+      },
     ): Promise<void> {
       await db.withTransactionAsync(async () => {
         await writeTotals(id, input.summary);
-        await db.runAsync('UPDATE sessions SET status = ?, ended_at = ? WHERE id = ?', [
-          input.status,
-          input.endedAt,
-          id,
-        ]);
+        await db.runAsync(
+          'UPDATE sessions SET status = ?, ended_at = ?, rounds_done = ? WHERE id = ?',
+          [input.status, input.endedAt, input.roundsDone ?? null, id],
+        );
         await db.runAsync('DELETE FROM session_phases WHERE session_id = ?', [id]);
         for (const phase of input.log.phases) {
           await db.runAsync(

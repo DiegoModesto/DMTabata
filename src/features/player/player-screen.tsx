@@ -1,7 +1,7 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -14,6 +14,7 @@ import { compileTimeline, type PhaseKind } from '@/domain/timeline';
 import type { Workout } from '@/domain/workout';
 import { useServices } from '@/providers/services-provider';
 
+import { useBackgroundNotifications, useForegroundRef } from './use-background-alerts';
 import { usePlayer } from './use-player';
 
 export const PHASE_LABELS: Record<PhaseKind, string> = {
@@ -42,14 +43,34 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
 function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSettings }) {
   useKeepAwake();
   const router = useRouter();
-  const { alertPlayer, clock, sessionService } = useServices();
+  const { alertPlayer, clock, sessionService, phaseNotifier } = useServices();
   const timeline = useMemo(() => compileTimeline(workout), [workout]);
-  const { snapshot, dispatch, stoppedEarly, getLog } = usePlayer(timeline, settings, {
+  const foreground = useForegroundRef();
+  const shouldPlay = useCallback(() => foreground.current, [foreground]);
+  const { snapshot, dispatch, stoppedEarly, getLog, peek } = usePlayer(timeline, settings, {
     alertPlayer,
     clock,
+    shouldPlay,
+  });
+  useBackgroundNotifications({
+    notifier: phaseNotifier,
+    timeline,
+    settings,
+    workoutName: workout.name,
+    peek,
   });
   const sessionRef = useRef<Promise<string> | null>(null);
   const [saved, setSaved] = useState<{ sessionId: string } | null | undefined>(undefined);
+  const [locked, setLocked] = useState(false);
+  const isAmrap = workout.type === 'amrap';
+  const [rounds, setRounds] = useState(0);
+  const roundsRef = useRef(0);
+  const changeRounds = (delta: number) =>
+    setRounds((r) => {
+      const next = Math.max(0, r + delta);
+      roundsRef.current = next;
+      return next;
+    });
 
   useEffect(() => {
     dispatch('start');
@@ -69,12 +90,16 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
     if (!finished || !sessionRef.current) return;
     let active = true;
     sessionRef.current
-      .then((id) => sessionService.finish(id, getLog(), stoppedEarly))
+      .then((id) =>
+        sessionService.finish(id, getLog(), stoppedEarly, {
+          roundsDone: isAmrap ? roundsRef.current : null,
+        }),
+      )
       .then((result) => active && setSaved(result ? { sessionId: result.sessionId } : null));
     return () => {
       active = false;
     };
-  }, [finished, getLog, sessionService, stoppedEarly]);
+  }, [finished, getLog, sessionService, stoppedEarly, isAmrap]);
   const background = finished ? PhaseColors.finished : PhaseColors[phase?.kind ?? 'prepare'];
 
   const confirmStop = () =>
@@ -94,6 +119,7 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
             Tempo: {formatDuration(snapshot.elapsedMs / 1000)} de{' '}
             {formatDuration(timeline.totalMs / 1000)}
           </ThemedText>
+          {isAmrap ? <ThemedText style={styles.white}>Rounds: {rounds}</ThemedText> : null}
         </View>
         {saved ? (
           <Button
@@ -155,18 +181,76 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
         {phase?.nextWorkLabel ? (
           <ThemedText style={styles.white}>Próximo: {phase.nextWorkLabel}</ThemedText>
         ) : null}
+        {isAmrap ? (
+          <View style={styles.rounds}>
+            <Button
+              title="−"
+              variant="secondary"
+              accessibilityLabel="Remover um round"
+              disabled={locked || rounds === 0}
+              onPress={() => changeRounds(-1)}
+            />
+            <ThemedText
+              type="subtitle"
+              style={styles.white}
+              accessibilityLabel={`${rounds} rounds`}>
+              {rounds} rounds
+            </ThemedText>
+            <Button
+              title="+1 round"
+              accessibilityLabel="Adicionar um round"
+              disabled={locked}
+              onPress={() => changeRounds(1)}
+            />
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.controls}>
-        <Button title="⏮ Voltar" variant="secondary" onPress={() => dispatch('back')} style={styles.ctrl} />
-        <Button
-          title={paused ? '▶ Continuar' : '⏸ Pausar'}
-          onPress={() => dispatch(paused ? 'resume' : 'pause')}
-          style={styles.ctrlMain}
-        />
-        <Button title="Pular ⏭" variant="secondary" onPress={() => dispatch('skip')} style={styles.ctrl} />
-      </View>
-      <Button title="Parar" variant="ghost" onPress={confirmStop} />
+      {locked ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Desbloquear controles"
+          accessibilityHint="Toque e segure para desbloquear"
+          onLongPress={() => setLocked(false)}
+          delayLongPress={600}
+          style={styles.lockBar}>
+          <ThemedText type="smallBold" style={styles.white}>
+            🔒 Toque e segure para desbloquear
+          </ThemedText>
+        </Pressable>
+      ) : (
+        <>
+          <View style={styles.controls}>
+            <Button
+              title="⏮ Voltar"
+              variant="secondary"
+              onPress={() => dispatch('back')}
+              style={styles.ctrl}
+            />
+            <Button
+              title={paused ? '▶ Continuar' : '⏸ Pausar'}
+              onPress={() => dispatch(paused ? 'resume' : 'pause')}
+              style={styles.ctrlMain}
+            />
+            <Button
+              title="Pular ⏭"
+              variant="secondary"
+              onPress={() => dispatch('skip')}
+              style={styles.ctrl}
+            />
+          </View>
+          <View style={styles.controls}>
+            <Button title="Parar" variant="ghost" onPress={confirmStop} style={styles.ctrl} />
+            <Button
+              title="🔒 Bloquear"
+              variant="ghost"
+              accessibilityLabel="Bloquear controles"
+              onPress={() => setLocked(true)}
+              style={styles.ctrl}
+            />
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -203,7 +287,12 @@ export function PlayerScreen({ workoutId }: { workoutId: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingHorizontal: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.three },
+  root: {
+    flex: 1,
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.three,
+    gap: Spacing.three,
+  },
   top: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: Spacing.two },
   white: { color: WHITE },
   centerText: { textAlign: 'center' },
@@ -222,4 +311,18 @@ const styles = StyleSheet.create({
   ctrl: { flex: 1 },
   ctrlMain: { flex: 1.4 },
   mainBtn: { minHeight: 56 },
+  rounds: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  lockBar: {
+    minHeight: 112,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -100,7 +100,7 @@ export function WorkoutListScreen() {
     <Screen
       title="Treinos"
       headerRight={
-        <Button title="+ Novo" onPress={() => router.push('/workout/new')} style={styles.newBtn} />
+        <Button title="+ Novo" onPress={() => router.push('/workout/templates')} style={styles.newBtn} />
       }>
       {loaded && summaries.length === 0 ? (
         <EmptyState
@@ -108,7 +108,7 @@ export function WorkoutListScreen() {
           message="Monte ciclos com o tempo de cada exercício e descanso."
           action={
             <View style={styles.emptyActions}>
-              <Button title="Criar treino" onPress={() => router.push('/workout/new')} />
+              <Button title="Criar treino" onPress={() => router.push('/workout/templates')} />
               <Button title="Usar Tabata clássico" variant="secondary" onPress={createTabata} />
             </View>
           }
