@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -8,10 +8,34 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
+/** Altura de linha mínima, em proporção ao tamanho da fonte, para não cortar acentos/topo. */
+export const MIN_LINE_HEIGHT_RATIO = 1.3;
+
+/**
+ * Se a tela aumenta a fonte sem ajustar a altura da linha, a linha herdada do tipo
+ * fica menor que a letra e o iOS corta o topo do texto. Devolve a altura corrigida
+ * (ou `undefined` quando não precisa mudar).
+ */
+export function fixedLineHeight(override: TextStyle | null | undefined): number | undefined {
+  if (!override?.fontSize || override.lineHeight !== undefined) return undefined;
+  return Math.ceil(override.fontSize * MIN_LINE_HEIGHT_RATIO);
+}
+
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const lineHeight = fixedLineHeight(StyleSheet.flatten(style));
 
-  return <Text style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]} {...rest} />;
+  return (
+    <Text
+      style={[
+        { color: theme[themeColor ?? 'text'] },
+        styles[type],
+        style,
+        lineHeight ? { lineHeight } : null,
+      ]}
+      {...rest}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
