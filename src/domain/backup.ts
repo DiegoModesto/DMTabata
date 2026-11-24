@@ -60,41 +60,52 @@ export function parseBackup(
   const workouts: Workout[] = [];
   let skipped = 0;
   for (const raw of data.workouts) {
-    if (!isObject(raw) || !Array.isArray(raw.cycles)) {
-      skipped++;
-      continue;
-    }
-    const workout: Workout = {
-      id: createId(),
-      name: str(raw.name).slice(0, 60),
-      type: (isWorkoutType(raw.type) ? raw.type : 'custom') as WorkoutType,
-      prepareSec: Math.max(LIMITS.minPrepareSec, num(raw.prepareSec, DEFAULTS.prepareSec)),
-      cooldownSec: num(raw.cooldownSec, 0),
-      restBetweenCyclesSec: num(raw.restBetweenCyclesSec, 60),
-      soundConfigId: null,
-      color: null,
-      favorite: raw.favorite === true,
-      createdAt: now,
-      updatedAt: now,
-      cycles: raw.cycles.filter(isObject).map((c) => ({
-        id: createId(),
-        name: str(c.name, 'Ciclo'),
-        repeatCount: num(c.repeatCount, 1),
-        defaultWorkSec: num(c.defaultWorkSec, 30),
-        defaultRestSec: num(c.defaultRestSec, 10),
-        skipLastRest: c.skipLastRest !== false,
-        items: (Array.isArray(c.items) ? c.items : []).filter(isObject).map((i): CycleItem => ({
-          id: createId(),
-          label: str(i.label, 'Exercício'),
-          workSec: nullableNum(i.workSec),
-          restSec: nullableNum(i.restSec),
-          workSoundId: sound(i.workSoundId),
-          restSoundId: sound(i.restSoundId),
-        })),
-      })),
-    };
-    if (validateWorkout(workout).length) skipped++;
-    else workouts.push(workout);
+    const workout = normalizeWorkout(raw, sound, now);
+    if (workout) workouts.push(workout);
+    else skipped++;
   }
   return { ok: true, workouts, skipped };
+}
+
+/**
+ * Converte um treino vindo de arquivo (backup ou compartilhado) em um treino válido:
+ * ids novos, valores padrão seguros, preparação mínima e sons só se `sound` os aceitar.
+ * Devolve `null` se o treino for inválido.
+ */
+export function normalizeWorkout(
+  raw: unknown,
+  sound: (v: unknown) => string | null,
+  now: number,
+): Workout | null {
+  if (!isObject(raw) || !Array.isArray(raw.cycles)) return null;
+  const workout: Workout = {
+    id: createId(),
+    name: str(raw.name).slice(0, 60),
+    type: (isWorkoutType(raw.type) ? raw.type : 'custom') as WorkoutType,
+    prepareSec: Math.max(LIMITS.minPrepareSec, num(raw.prepareSec, DEFAULTS.prepareSec)),
+    cooldownSec: num(raw.cooldownSec, 0),
+    restBetweenCyclesSec: num(raw.restBetweenCyclesSec, 60),
+    soundConfigId: null,
+    color: null,
+    favorite: raw.favorite === true,
+    createdAt: now,
+    updatedAt: now,
+    cycles: raw.cycles.filter(isObject).map((c) => ({
+      id: createId(),
+      name: str(c.name, 'Ciclo'),
+      repeatCount: num(c.repeatCount, 1),
+      defaultWorkSec: num(c.defaultWorkSec, 30),
+      defaultRestSec: num(c.defaultRestSec, 10),
+      skipLastRest: c.skipLastRest !== false,
+      items: (Array.isArray(c.items) ? c.items : []).filter(isObject).map((i): CycleItem => ({
+        id: createId(),
+        label: str(i.label, 'Exercício'),
+        workSec: nullableNum(i.workSec),
+        restSec: nullableNum(i.restSec),
+        workSoundId: sound(i.workSoundId),
+        restSoundId: sound(i.restSoundId),
+      })),
+    })),
+  };
+  return validateWorkout(workout).length ? null : workout;
 }

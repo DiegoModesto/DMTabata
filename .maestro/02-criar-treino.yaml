@@ -11,9 +11,12 @@ name: Criar treino com tempo diferente no 3º exercício
 - tapOn:
     text: "Permitir"
     optional: true
-- tapOn: "Criar treino"
-- assertVisible: "Modelo Tabata"
+- tapOn: "+ Novo"
+- assertVisible: "Modelos do DMTabata"
+- assertVisible: "Modelo Boxe Sequenciado"
 - takeScreenshot: .maestro/screenshots/03-modelos
+- scrollUntilVisible:
+    element: "Modelo Personalizado"
 - tapOn: "Modelo Personalizado"
 # Preparação já nasce no mínimo (16s) e não desce
 - assertVisible: "Preparação: 0:16"

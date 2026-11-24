@@ -55,6 +55,13 @@ O "Pára pára pára, aeee" também faz parte do pacote e pode ser escolhido com
 
 > O iOS não toca mp3 em notificações: com o app em segundo plano, esses sons usam o som padrão do sistema.
 
+### Compartilhar, modelos e treinos embutidos
+- **Compartilhar**: no treino, *Compartilhar* gera `nome-do-treino.dmtabata` e abre o menu do iOS (WhatsApp, AirDrop, *Salvar em Arquivos*). O arquivo leva a estrutura do treino e os sons que existem em qualquer instalação (embutidos e pacote pessoal); sons importados/gravados ficam de fora (o app avisa).
+- **Receber**: tocar no arquivo `.dmtabata` abre o DMTabata com o treino para *Adicionar aos meus treinos*. Também dá para usar *Novo treino → Importar treino de arquivo*.
+- **Salvar como modelo**: guarda uma cópia em *Novo treino → Meus modelos*; cada uso cria um treino novo, sem mexer no modelo.
+- **Treinos embutidos**: arquivos em [`assets/workouts/`](assets/workouts) aparecem em *Modelos do DMTabata* e são adicionados **uma única vez** à lista em instalações novas (se apagados, não voltam). Hoje: **Boxe Sequenciado** (4 ciclos, 17 exercícios).
+- **Embutir um treino novo**: compartilhe-o pelo app, salve o arquivo como `assets/workouts/<id>.json` e registre em [`src/services/library/bundledWorkouts.ts`](src/services/library/bundledWorkouts.ts).
+
 ### Estatísticas e dados
 - Tempo realizado por fase, pausas, fases puladas e rounds (AMRAP).
 - Feedback pós-treino: nota, esforço, dificuldade, humor e observações.
@@ -113,11 +120,12 @@ src/
   features/     telas por funcionalidade (workouts, player, sounds, sessions, stats, settings, auth)
   domain/       regras de negócio puras (treino, timeline, alertas, sons, surpresas, estatísticas)
   engine/       motor do temporizador + controlador (eventos → comandos de áudio)
-  services/     SQLite (migrações v1–v6), áudio, música de fundo, notificações, sons, sessões, backup
+  services/     SQLite (migrações v1–v6), áudio, música de fundo, notificações, sons, sessões, backup, biblioteca de treinos
   stores/       estado (Zustand)
   components/   UI reutilizável (Button, Stepper, Icon, Screen, TextField…)
   test/         utilitários de teste (SQLite em memória, fakes, fábricas)
 assets/sounds/  .wav embutidos (gerados) e pack/ (pacote pessoal em mp3)
+assets/workouts/ treinos embutidos (formato .dmtabata em JSON)
 plugins/        config plugins do Expo
 .maestro/       fluxos E2E
 Plans/          plano técnico
@@ -138,7 +146,7 @@ Sons importados guardam o caminho do arquivo, que é **reancorado na pasta atual
 
 ### Testes
 
-- **Unitários e de regra de negócio** (409, Jest): domínio e motor (funções puras, incluindo propriedade da timeline e precisão do relógio), repositórios contra SQLite real em memória (`better-sqlite3`) com as mesmas migrações do app, serviços com fakes de áudio/arquivos/notificações e telas com Testing Library sobre o banco de teste e relógio simulado.
+- **Unitários e de regra de negócio** (438, Jest): domínio e motor (funções puras, incluindo propriedade da timeline e precisão do relógio), repositórios contra SQLite real em memória (`better-sqlite3`) com as mesmas migrações do app, serviços com fakes de áudio/arquivos/notificações e telas com Testing Library sobre o banco de teste e relógio simulado.
 - **E2E** (4 fluxos, Maestro): login, criar treino (cenário do plano), treinar/avaliar/estatísticas e sons — no app real num simulador.
 
 #### Rodando os testes E2E
@@ -180,6 +188,8 @@ Cada fase ou melhoria é feita em uma branch própria, com testes unitários e d
 | #16 | Música no volume máximo, abaixando só quando outro áudio toca |
 | #17 | Texto do player não corta mais no topo |
 | #18 | Pacote pessoal de sons embutido no app |
+| #19 | README atualizado com o estado do projeto |
+| #20 | Compartilhar treinos, salvar como modelo e treinos embutidos (Boxe Sequenciado) |
 
 ## Licença
 

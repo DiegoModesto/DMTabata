@@ -36,6 +36,7 @@ describe('SettingsScreen — backup', () => {
           shared.push(content);
         },
         pickText: async () => nextText,
+        readUri: async () => '',
       },
     });
     await services.authStore.getState().signIn({ email: 'ana@x.com' });

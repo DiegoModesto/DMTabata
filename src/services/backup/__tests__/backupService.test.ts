@@ -12,6 +12,9 @@ function fakeIO() {
     async pickText() {
       return state.nextText;
     },
+    async readUri() {
+      return '';
+    },
   };
   return { io, state };
 }

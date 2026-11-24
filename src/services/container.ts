@@ -5,6 +5,8 @@ import { createSilentAlertPlayer, type AlertPlayer } from './audio/alertPlayer';
 import type { SoundImporter } from './audio/soundImporter';
 import type { BackupIO } from './backup/backupIO';
 import { createBackupService } from './backup/backupService';
+import { BUNDLED_WORKOUTS, type BundledWorkout } from './library/bundledWorkouts';
+import { createWorkoutLibrary } from './library/workoutLibrary';
 import { createMockAuthService } from './auth/mockAuthService';
 import type { SqlDatabase } from './db/database';
 import { createSessionRepository } from './db/repositories/sessionRepository';
@@ -26,6 +28,8 @@ export type ServiceOverrides = {
   clock?: () => number;
   /** Data/hora atual (epoch ms) para registros e estatísticas. */
   now?: () => number;
+  /** Treinos embutidos (testes podem trocar por uma lista própria). */
+  bundledWorkouts?: BundledWorkout[];
 };
 
 const unavailableImporter: SoundImporter = {
@@ -45,6 +49,9 @@ const unavailableBackupIO: BackupIO = {
     throw new Error('Exportação indisponível.');
   },
   pickText: async () => null,
+  readUri: async () => {
+    throw new Error('Leitura de arquivos indisponível.');
+  },
 };
 
 const defaultClock = () =>
@@ -74,15 +81,28 @@ export function createServices(db: SqlDatabase, overrides: ServiceOverrides = {}
   });
   const sessions = createSessionRepository(db);
   const sessionService = createSessionService({ sessions, now: overrides.now });
+  const getUserId = () => authStore.getState().user?.id ?? null;
+  const backupIO = overrides.backupIO ?? unavailableBackupIO;
+  const library = createWorkoutLibrary({
+    workouts,
+    configs: soundConfigs,
+    sounds,
+    settings,
+    io: backupIO,
+    bundled: overrides.bundledWorkouts ?? BUNDLED_WORKOUTS,
+    getUserId,
+    now: overrides.now,
+  });
   const workoutsStore = createWorkoutsStore({
     workouts,
-    getUserId: () => authStore.getState().user?.id ?? null,
+    getUserId,
+    beforeLoad: () => library.ensureBundledWorkouts(),
   });
 
   const backupService = createBackupService({
     workouts,
     sounds,
-    io: overrides.backupIO ?? unavailableBackupIO,
+    io: backupIO,
     getUserId: () => authStore.getState().user?.id ?? null,
     now: overrides.now,
   });
@@ -100,6 +120,7 @@ export function createServices(db: SqlDatabase, overrides: ServiceOverrides = {}
     sessions,
     sessionService,
     backupService,
+    library,
     phaseNotifier: overrides.phaseNotifier ?? createNoopPhaseNotifier(),
     soundService,
     alertPlayer,

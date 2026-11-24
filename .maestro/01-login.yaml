@@ -21,6 +21,7 @@ name: Login mock
 - inputText: "123"
 - tapOn: "Entrar"
 - extendedWaitUntil:
-    visible: "Crie seu primeiro treino"
+    visible: "Abrir treino Boxe Sequenciado"
     timeout: 15000
-- takeScreenshot: .maestro/screenshots/02-lista-vazia
+# Instalação nova já vem com o treino embutido
+- takeScreenshot: .maestro/screenshots/02-lista-inicial
