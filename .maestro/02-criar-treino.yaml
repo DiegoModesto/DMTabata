@@ -1,0 +1,36 @@
+# Cenário do plano: 5 exercícios de 30s/10s com o 3º em 60s → ciclo 3min40s, total 3min50s.
+appId: com.dmtabata.app
+name: Criar treino com tempo diferente no 3º exercício
+---
+- launchApp
+- tapOn: "Criar treino"
+- assertVisible: "Modelo Tabata"
+- takeScreenshot: .maestro/screenshots/03-modelos
+- tapOn: "Modelo Personalizado"
+- tapOn: "Nome do treino"
+- inputText: "Treino de perna"
+- hideKeyboard
+- tapOn: "Editar Exercício 3"
+- tapOn: "Nome do exercício"
+- eraseText: 20
+- inputText: "Prancha"
+- hideKeyboard
+- repeat:
+    times: 6
+    commands:
+      - tapOn: "Aumentar Trabalho"
+- assertVisible: "Trabalho: 1:00"
+- takeScreenshot: .maestro/screenshots/04-exercicio-60s
+- tapOn: "Concluir"
+- scrollUntilVisible:
+    element: "Tempo do ciclo: 3min40s"
+- scrollUntilVisible:
+    element: "Tempo total 3min50s"
+- takeScreenshot: .maestro/screenshots/05-editor-total
+- tapOn: "Salvar"
+- extendedWaitUntil:
+    visible: "▶ Começar"
+    timeout: 10000
+- assertVisible: "Tempo total 3min50s"
+- assertVisible: "Ciclo 1, 3min40s"
+- takeScreenshot: .maestro/screenshots/06-detalhe
