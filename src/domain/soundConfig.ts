@@ -6,6 +6,7 @@ import {
   type AlertSlot,
   type SoundId,
 } from './alerts';
+import { cleanSurprisePool } from './surprises';
 
 /**
  * Camada de configuração de alertas. Todo campo `null` significa "herdar da camada
@@ -24,6 +25,9 @@ export type SoundConfig = {
   voiceLang: string | null;
   announceNext: boolean | null;
   duckMusic: boolean | null;
+  /** `null` herda; `[]` desliga explicitamente. */
+  surpriseSounds: SoundId[] | null;
+  surpriseChance: number | null;
 };
 
 export const COUNTDOWN_MAX = 10;
@@ -44,14 +48,19 @@ export function emptySoundConfig(id: string, name: string): SoundConfig {
     voiceLang: null,
     announceNext: null,
     duckMusic: null,
+    surpriseSounds: null,
+    surpriseChance: null,
   };
 }
 
-const pick = <T,>(value: T | null | undefined, fallback: T): T =>
+const pick = <T>(value: T | null | undefined, fallback: T): T =>
   value === null || value === undefined ? fallback : value;
 
 /** Aplica uma camada sobre configurações já resolvidas: campos `null` herdam de `base`. */
-export function applySoundConfig(base: AlertSettings, layer: SoundConfig | null | undefined): AlertSettings {
+export function applySoundConfig(
+  base: AlertSettings,
+  layer: SoundConfig | null | undefined,
+): AlertSettings {
   if (!layer) return base;
   const sounds = { ...base.sounds };
   for (const slot of ALERT_SLOTS) {
@@ -62,7 +71,10 @@ export function applySoundConfig(base: AlertSettings, layer: SoundConfig | null 
   }
   return {
     sounds,
-    countdownFrom: Math.min(COUNTDOWN_MAX, Math.max(0, pick(layer.countdownFrom, base.countdownFrom))),
+    countdownFrom: Math.min(
+      COUNTDOWN_MAX,
+      Math.max(0, pick(layer.countdownFrom, base.countdownFrom)),
+    ),
     volume: Math.min(1, Math.max(0, pick(layer.volume, base.volume))),
     hapticsEnabled: pick(layer.hapticsEnabled, base.hapticsEnabled),
     halfwayAlert: pick(layer.halfwayAlert, base.halfwayAlert),
@@ -70,19 +82,23 @@ export function applySoundConfig(base: AlertSettings, layer: SoundConfig | null 
     voiceLang: pick(layer.voiceLang, base.voiceLang),
     announceNext: pick(layer.announceNext, base.announceNext),
     duckMusic: pick(layer.duckMusic, base.duckMusic),
+    surpriseSounds: cleanSurprisePool(pick(layer.surpriseSounds, base.surpriseSounds)),
+    surpriseChance: Math.min(1, Math.max(0, pick(layer.surpriseChance, base.surpriseChance))),
   };
 }
 
 /** Aplica as camadas em ordem (a última vence) sobre o padrão do app. */
-export function resolveAlertSettings(
-  ...layers: (SoundConfig | null | undefined)[]
-): AlertSettings {
+export function resolveAlertSettings(...layers: (SoundConfig | null | undefined)[]): AlertSettings {
   return layers.reduce<AlertSettings>(applySoundConfig, DEFAULT_ALERT_SETTINGS);
 }
 
 /** Todos os sons que podem tocar com estas configurações (para pré-carregar). */
 export function soundsInUse(settings: AlertSettings, extra: (SoundId | null)[] = []): SoundId[] {
-  const ids = [...ALERT_SLOTS.map((slot) => settings.sounds[slot]), ...extra];
+  const ids = [
+    ...ALERT_SLOTS.map((slot) => settings.sounds[slot]),
+    ...settings.surpriseSounds,
+    ...extra,
+  ];
   return [...new Set(ids.filter((id): id is SoundId => !!id && id !== SILENT_SOUND_ID))];
 }
 

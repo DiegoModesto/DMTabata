@@ -67,6 +67,10 @@ export type AlertSettings = {
   announceNext: boolean;
   /** Abaixa (em vez de pausar) a música de outros apps durante os alertas. */
   duckMusic: boolean;
+  /** Sons sorteados em momentos aleatórios do trabalho (vazio = desligado). */
+  surpriseSounds: SoundId[];
+  /** Chance (0..1) de cada fase de trabalho ganhar um som surpresa. */
+  surpriseChance: number;
 };
 
 export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
@@ -87,10 +91,20 @@ export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
   voiceLang: 'pt-BR',
   announceNext: true,
   duckMusic: true,
+  surpriseSounds: [],
+  surpriseChance: 0.3,
 };
 
 export type AlertCommand =
-  | { type: 'sound'; soundId: SoundId; volume: number; slot: AlertSlot }
+  | {
+      type: 'sound';
+      soundId: SoundId;
+      volume: number;
+      slot: AlertSlot | 'surprise';
+      /** Canal exclusivo: um som novo no canal interrompe o anterior. */
+      channel?: 'surprise';
+    }
+  | { type: 'stopChannel'; channel: 'surprise' }
   | { type: 'haptic'; style: HapticStyle }
   | { type: 'speak'; text: string; lang: string };
 

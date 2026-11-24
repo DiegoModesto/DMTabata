@@ -191,3 +191,20 @@ describe('soundService — gravação pelo microfone', () => {
     expect(fake.state.removed).toEqual([temp]);
   });
 });
+
+describe('soundService — sons surpresa', () => {
+  it('som removido da biblioteca sai do sorteio', async () => {
+    const { soundService, sounds, workout } = await setup();
+    const a = await sounds.addUserSound({ name: 'Chicote', uri: 'file:///a.mp3' });
+    const b = await sounds.addUserSound({ name: 'Risada', uri: 'file:///b.mp3' });
+    const global = await soundService.globalConfig();
+    await soundService.saveConfig({ ...global, surpriseSounds: [a.id, b.id, 'gong'] });
+    expect((await soundService.settingsForWorkout(workout)).surpriseSounds).toEqual([
+      a.id,
+      b.id,
+      'gong',
+    ]);
+    await soundService.removeSound(a.id);
+    expect((await soundService.settingsForWorkout(workout)).surpriseSounds).toEqual([b.id, 'gong']);
+  });
+});

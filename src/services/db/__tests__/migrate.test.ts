@@ -154,7 +154,7 @@ describe('migração 2', () => {
       `INSERT INTO workouts (id, name, prepare_sec, created_at, updated_at)
        VALUES ('curto', 'Curto', 10, 0, 0), ('longo', 'Longo', 30, 0, 0)`,
     );
-    expect(await migrate(db)).toEqual([4]);
+    expect(await migrate(db)).toEqual([4, 5]);
     const rows = await db.getAllAsync<{ id: string; prepare_sec: number }>(
       'SELECT id, prepare_sec FROM workouts ORDER BY id',
     );
@@ -172,7 +172,7 @@ describe('migração 2', () => {
     await db.runAsync(
       "INSERT INTO workouts (id, name, created_at, updated_at) VALUES ('w1', 'Antigo', 0, 0)",
     );
-    expect(await migrate(db)).toEqual([2, 3, 4]);
+    expect(await migrate(db)).toEqual([2, 3, 4, 5]);
     const row = await db.getFirstAsync<{ name: string }>(
       "SELECT name FROM workouts WHERE id = 'w1'",
     );

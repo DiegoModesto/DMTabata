@@ -169,4 +169,12 @@ export const migrations: Migration[] = [
       UPDATE workouts SET prepare_sec = 16 WHERE prepare_sec < 16;
     `,
   },
+  {
+    version: 5,
+    name: 'sons surpresa',
+    sql: `
+      ALTER TABLE sound_configs ADD COLUMN surprise_sound_ids TEXT;
+      ALTER TABLE sound_configs ADD COLUMN surprise_chance REAL;
+    `,
+  },
 ];

@@ -83,3 +83,69 @@ describe('timerController — treino completo (regra de negócio dos sons)', () 
     expect(update.commands).toEqual([]);
   });
 });
+
+describe('timerController — sons surpresa', () => {
+  const settings = {
+    ...DEFAULT_ALERT_SETTINGS,
+    surpriseSounds: ['chicote', 'risada', 'seiya'],
+    surpriseChance: 1,
+  };
+
+  function run(controller: ReturnType<typeof createTimerController>, until: number) {
+    const commands: AlertCommand[] = [];
+    commands.push(...controller.dispatch('start', 0).commands);
+    for (let t = 100; t <= until; t += 100) commands.push(...controller.update(t).commands);
+    return commands;
+  }
+
+  it('toca no canal surpresa cada som sorteado, no momento sorteado', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, settings, () => 0.5);
+    const commands = run(controller, timeline.totalMs + 1_000);
+    const played = commands.filter((c) => c.type === 'sound' && c.slot === 'surprise');
+    expect(played).toHaveLength(controller.getSurprises().length);
+    expect(played.every((c) => c.type === 'sound' && c.channel === 'surprise')).toBe(true);
+  });
+
+  it('ao terminar, silencia a surpresa antes do som de fim', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, settings, () => 0.5);
+    const commands = run(controller, timeline.totalMs + 1_000);
+    const stopIndex = commands.findIndex((c) => c.type === 'stopChannel');
+    const endIndex = commands.findIndex((c) => c.type === 'sound' && c.slot === 'workoutEnd');
+    expect(stopIndex).toBeGreaterThanOrEqual(0);
+    expect(stopIndex).toBeLessThan(endIndex);
+  });
+
+  it('pausar e parar silenciam a surpresa', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, settings, () => 0.5);
+    run(controller, 20_000);
+    expect(controller.dispatch('pause', 20_000).commands).toContainEqual({
+      type: 'stopChannel',
+      channel: 'surprise',
+    });
+    controller.dispatch('resume', 21_000);
+    expect(controller.dispatch('stop', 22_000).commands).toContainEqual({
+      type: 'stopChannel',
+      channel: 'surprise',
+    });
+  });
+
+  it('volume zero não toca surpresas; sem lista não sorteia', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const silent = createTimerController(timeline, { ...settings, volume: 0 }, () => 0.5);
+    expect(
+      run(silent, timeline.totalMs).some((c) => c.type === 'sound' && c.slot === 'surprise'),
+    ).toBe(false);
+    expect(createTimerController(timeline, DEFAULT_ALERT_SETTINGS).getSurprises()).toEqual([]);
+  });
+
+  it('mudar a lista durante o treino refaz o sorteio', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, DEFAULT_ALERT_SETTINGS, () => 0.5);
+    expect(controller.getSurprises()).toEqual([]);
+    controller.setSettings(settings);
+    expect(controller.getSurprises().length).toBeGreaterThan(0);
+  });
+});

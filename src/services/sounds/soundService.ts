@@ -152,7 +152,13 @@ export function createSoundService(deps: {
     async settingsForWorkout(workout: Workout): Promise<AlertSettings> {
       const global = await globalConfig();
       const own = workout.soundConfigId ? await configs.getById(workout.soundConfigId) : null;
-      return resolveAlertSettings(global, own);
+      const settings = resolveAlertSettings(global, own);
+      // Sons removidos da biblioteca saem do sorteio.
+      const available = new Set((await sounds.list()).map((s) => s.id));
+      return {
+        ...settings,
+        surpriseSounds: settings.surpriseSounds.filter((id) => available.has(id)),
+      };
     },
   };
 }
