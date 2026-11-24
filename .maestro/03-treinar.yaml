@@ -2,28 +2,40 @@
 appId: com.dmtabata.app
 name: Treinar, avaliar e ver estatísticas
 ---
-- launchApp
+- launchApp:
+    permissions:
+      notifications: allow
+      microphone: allow
+# No iOS 26 o alerta de notificações ainda pode aparecer: aceita se surgir.
+- tapOn:
+    text: "Permitir"
+    optional: true
 - tapOn: "Abrir treino Treino de perna"
 - tapOn: "▶ Começar"
+# Se o iOS ainda pedir permissão de notificações, aceita.
+- tapOn:
+    text: "Permitir"
+    optional: true
 - extendedWaitUntil:
     visible: "PREPARAR"
     timeout: 10000
 - takeScreenshot: .maestro/screenshots/07-player-preparar
-- tapOn: "Pular ⏭"
+- tapOn: "Pular"
 - assertVisible: "TRABALHO"
-- assertVisible: "Polichinelo"
+- assertVisible: "Exercício 1"
 - takeScreenshot: .maestro/screenshots/08-player-trabalho
-- tapOn: "⏸ Pausar"
+- tapOn: "Pausar"
 - assertVisible: "PAUSADO"
-- tapOn: "▶ Continuar"
-- tapOn: "Pular ⏭"
+- assertVisible: "Continuar"
+- tapOn: "Continuar"
+- tapOn: "Pular"
 - assertVisible: "DESCANSO"
 - takeScreenshot: .maestro/screenshots/09-player-descanso
 - repeat:
     while:
       notVisible: "Treino concluído!"
     commands:
-      - tapOn: "Pular ⏭"
+      - tapOn: "Pular"
 - takeScreenshot: .maestro/screenshots/10-concluido
 - tapOn: "Avaliar treino"
 - extendedWaitUntil:

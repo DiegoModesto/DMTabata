@@ -2,7 +2,14 @@
 appId: com.dmtabata.app
 name: Sons globais e estatísticas gerais
 ---
-- launchApp
+- launchApp:
+    permissions:
+      notifications: allow
+      microphone: allow
+# No iOS 26 o alerta de notificações ainda pode aparecer: aceita se surgir.
+- tapOn:
+    text: "Permitir"
+    optional: true
 - tapOn: "Estatísticas"
 - extendedWaitUntil:
     visible: "treinos na semana: 1"
@@ -14,6 +21,22 @@ name: Sons globais e estatísticas gerais
     visible: "Início do trabalho: Largada (padrão)"
     timeout: 10000
 - tapOn: "Início do trabalho: Largada (padrão)"
+- assertVisible: "RINGUE E LUTA"
 - tapOn: "Apito"
 - assertVisible: "Início do trabalho: Apito"
+# Pré-escuta alterna play/pause
+- tapOn: "Ouvir Início do trabalho"
+- assertVisible: "Parar Início do trabalho"
+- tapOn: "Parar Início do trabalho"
+- assertVisible: "Ouvir Início do trabalho"
+# Cabeçalho com "Voltar" (sem cobrir o título)
+- assertVisible: "Voltar"
+- assertVisible: "Sons globais"
+- scrollUntilVisible:
+    element: "Volume da música.*"
+- assertVisible: "Música: Nenhuma (padrão)"
+- scrollUntilVisible:
+    element: "Adicionar som surpresa"
+- assertVisible: "Nenhum som surpresa escolhido."
+- takeScreenshot: .maestro/screenshots/15-musica-e-surpresas
 - takeScreenshot: .maestro/screenshots/14-sons

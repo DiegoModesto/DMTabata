@@ -59,7 +59,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "check": "npm run typecheck && npm run lint && npm test",
+    "e2e": "maestro test .maestro/01-login.yaml .maestro/02-criar-treino.yaml .maestro/03-treinar.yaml .maestro/04-sons-e-abas.yaml"
   },
   "private": true,
   "allowScripts": {

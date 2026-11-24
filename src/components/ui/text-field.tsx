@@ -16,6 +16,7 @@ export function TextField({ label, error, style, ...rest }: Props) {
       <ThemedText type="smallBold">{label}</ThemedText>
       <TextInput
         accessibilityLabel={label}
+        testID={`input:${label}`}
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.input,

@@ -4,6 +4,13 @@ name: Login mock
 ---
 - launchApp:
     clearState: true
+    permissions:
+      notifications: allow
+      microphone: allow
+# No iOS 26 o alerta de notificações ainda pode aparecer: aceita se surgir.
+- tapOn:
+    text: "Permitir"
+    optional: true
 - extendedWaitUntil:
     visible: "Entrar"
     timeout: 60000
