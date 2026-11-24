@@ -22,7 +22,7 @@ import {
   resolveAlertSettings,
   type SoundConfig,
 } from '@/domain/soundConfig';
-import { nextRecordingName, soundName } from '@/domain/sounds';
+import { nextRecordingName, PERSONAL_PACK_PRESET, soundName } from '@/domain/sounds';
 import { useTheme } from '@/hooks/use-theme';
 import { useServices } from '@/providers/services-provider';
 
@@ -114,6 +114,15 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
   const setSound = (slot: AlertSlot, soundId: string | null) => {
     if (!config) return;
     update({ sounds: { ...config.sounds, [slot]: soundId } });
+  };
+
+  const applyPersonalPack = () => {
+    if (!config) return;
+    update({
+      sounds: { ...config.sounds, ...PERSONAL_PACK_PRESET.sounds },
+      surpriseSounds: [...PERSONAL_PACK_PRESET.surpriseSounds],
+      backgroundMusicId: PERSONAL_PACK_PRESET.backgroundMusicId,
+    });
   };
 
   const togglePersonalize = async (on: boolean) => {
@@ -318,6 +327,23 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
           />
         ) : null}
       </Card>
+
+      {scope.type === 'global' && editable ? (
+        <Button
+          title="Usar pacote pessoal"
+          variant="secondary"
+          onPress={() =>
+            Alert.alert(
+              'Usar pacote pessoal?',
+              'Aplica Vamo acordar na preparação, Corneta no trabalho, Campainha de boxe no descanso, Cabou no fim, os 12 sons surpresa e a música de fundo.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Aplicar', onPress: applyPersonalPack },
+              ],
+            )
+          }
+        />
+      ) : null}
 
       {editable ? (
         <Button

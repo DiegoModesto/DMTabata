@@ -2,12 +2,16 @@ import { SILENT_SOUND_ID } from '../alerts';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { notificationSound } from '../notificationPlan';
+
 import {
   BUILTIN_SOUNDS,
   checkImport,
   checkRecording,
   groupSounds,
   IMPORT_LIMITS,
+  isPackSoundId,
+  PERSONAL_PACK_PRESET,
   nextRecordingName,
   RECORDING_LIMITS,
   recordingExtension,
@@ -100,6 +104,12 @@ describe('catálogo de sons embutidos', () => {
     );
     const registered: string[] = plugin[1].sounds;
     for (const s of BUILTIN_SOUNDS) {
+      if (isPackSoundId(s.id)) {
+        // mp3 do pacote: arquivo existe; notificações usam o som padrão (iOS não aceita mp3)
+        const file = `./assets/sounds/pack/${s.id.replace(/^pack-/, '')}.mp3`;
+        expect(fs.existsSync(path.join(root, file))).toBe(true);
+        continue;
+      }
       const file = `./assets/sounds/${s.id}.wav`;
       expect(registered).toContain(file);
       expect(fs.existsSync(path.join(root, file))).toBe(true);
@@ -203,5 +213,31 @@ describe('rebaseDocumentUri — pasta do app mudou de caminho', () => {
   it('não mexe em sons embutidos nem em arquivos fora de Documents', () => {
     expect(rebaseDocumentUri('builtin:gong', now)).toBe('builtin:gong');
     expect(rebaseDocumentUri('file:///tmp/rec.m4a', now)).toBe('file:///tmp/rec.m4a');
+  });
+});
+
+describe('pacote pessoal', () => {
+  const ids = new Set(BUILTIN_SOUNDS.map((s) => s.id as string));
+
+  it('18 sons em "Pacote pessoal", com crédito registrado', () => {
+    const pack = BUILTIN_SOUNDS.filter((s) => s.category === 'pack');
+    expect(pack).toHaveLength(18);
+    expect(pack.every((s) => isPackSoundId(s.id))).toBe(true);
+    const root = path.join(__dirname, '..', '..', '..');
+    const credits = fs.readFileSync(path.join(root, 'assets/sounds/pack/CREDITOS.md'), 'utf8');
+    expect(credits).toContain('MyInstants');
+    for (const s of pack) expect(credits).toContain(s.name);
+  });
+
+  it('a configuração do pacote só usa sons que existem no catálogo', () => {
+    for (const id of Object.values(PERSONAL_PACK_PRESET.sounds)) expect(ids.has(id)).toBe(true);
+    for (const id of PERSONAL_PACK_PRESET.surpriseSounds) expect(ids.has(id)).toBe(true);
+    expect(ids.has(PERSONAL_PACK_PRESET.backgroundMusicId)).toBe(true);
+    expect(PERSONAL_PACK_PRESET.surpriseSounds).toHaveLength(12);
+  });
+
+  it('sons do pacote viram "default" nas notificações; .wav embutidos continuam', () => {
+    expect(notificationSound('pack-corneta')).toBe('default');
+    expect(notificationSound('ring-bell')).toBe('ring-bell.wav');
   });
 });

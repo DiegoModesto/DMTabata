@@ -1,5 +1,5 @@
 import { SILENT_SOUND_ID, type AlertSettings } from './alerts';
-import { isBuiltinSoundId } from './sounds';
+import { isBuiltinSoundId, isPackSoundId } from './sounds';
 import type { Phase, Timeline } from './timeline';
 
 /**
@@ -30,7 +30,8 @@ const PHASE_TITLES: Record<Phase['kind'], string> = {
 /** Notificações só tocam sons empacotados; sons importados caem no som padrão do sistema. */
 export function notificationSound(soundId: string | null): string | null {
   if (!soundId || soundId === SILENT_SOUND_ID) return null;
-  return isBuiltinSoundId(soundId) ? `${soundId}.wav` : 'default';
+  // Notificações usam os .wav embutidos; mp3 (pacote/importados) caem no som padrão do sistema.
+  return isBuiltinSoundId(soundId) && !isPackSoundId(soundId) ? `${soundId}.wav` : 'default';
 }
 
 function soundForPhase(phase: Phase, settings: AlertSettings): string | null {

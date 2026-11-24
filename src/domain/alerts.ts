@@ -44,7 +44,25 @@ export type BuiltinSoundId =
   | 'alarm'
   | 'siren'
   | 'buzzer'
-  | 'chime';
+  | 'chime'
+  | 'pack-vamo-acordar'
+  | 'pack-corneta'
+  | 'pack-campainha-boxe'
+  | 'pack-chicote'
+  | 'pack-risada-maligna'
+  | 'pack-pica-pau'
+  | 'pack-sukuna'
+  | 'pack-como-sou-lindo'
+  | 'pack-saint-seiya'
+  | 'pack-pegasus-fantasy'
+  | 'pack-lula-me-ajuda'
+  | 'pack-ze-gotinha'
+  | 'pack-lula-treine'
+  | 'pack-fahhh'
+  | 'pack-vine-boom'
+  | 'pack-para-para'
+  | 'pack-cabou'
+  | 'pack-background-vibes';
 
 /** Id de som: embutido, importado pelo usuário (uuid) ou `SILENT_SOUND_ID`. */
 export type SoundId = string;
