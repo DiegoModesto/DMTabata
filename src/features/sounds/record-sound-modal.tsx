@@ -93,10 +93,19 @@ export function RecordSoundModal({ visible, suggestedName, onSaved, onClose }: P
               ]}
             />
           </View>
-          <ThemedText type="smallBold" style={styles.center}>
-            {status === 'recording' ? '● Gravando ' : ''}
-            {seconds(elapsedMs)} s / 3,0 s
-          </ThemedText>
+          <View style={styles.statusRow}>
+            {status === 'recording' ? (
+              <>
+                <View style={[styles.recDot, { backgroundColor: theme.danger }]} />
+                <ThemedText type="smallBold" style={{ color: theme.danger }}>
+                  Gravando
+                </ThemedText>
+              </>
+            ) : null}
+            <ThemedText type="smallBold" style={styles.tabular}>
+              {seconds(elapsedMs)} s / 3,0 s
+            </ThemedText>
+          </View>
 
           {status === 'denied' ? (
             <View style={styles.gap}>
@@ -117,18 +126,20 @@ export function RecordSoundModal({ visible, suggestedName, onSaved, onClose }: P
           ) : null}
 
           {status === 'recording' ? (
-            <Button title="■ Parar" onPress={() => void recorder.stop()} />
+            <Button title="Parar" icon="stop" onPress={() => void recorder.stop()} />
           ) : status === 'recorded' && recording ? (
             <View style={styles.gap}>
               <View style={styles.row}>
                 <Button
-                  title="▶ Ouvir"
+                  title={recorder.playing ? 'Pausar' : 'Ouvir'}
+                  icon={recorder.playing ? 'pause' : 'play'}
                   variant="secondary"
-                  onPress={recorder.playRecording}
+                  onPress={recorder.togglePlayback}
                   style={styles.flex}
                 />
                 <Button
-                  title="● Regravar"
+                  title="Regravar"
+                  icon="redo"
                   variant="secondary"
                   onPress={() => void rerecord()}
                   style={styles.flex}
@@ -144,7 +155,7 @@ export function RecordSoundModal({ visible, suggestedName, onSaved, onClose }: P
               <Button title="Salvar som" disabled={saving} onPress={() => void save()} />
             </View>
           ) : (
-            <Button title="● Gravar" onPress={() => void recorder.start()} />
+            <Button title="Gravar" icon="record" onPress={() => void recorder.start()} />
           )}
 
           <Button title="Cancelar" variant="ghost" onPress={discardAndClose} />
@@ -166,7 +177,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 18 },
   track: { height: 10, borderRadius: 5, overflow: 'hidden' },
   fill: { height: '100%' },
-  center: { textAlign: 'center' },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  recDot: { width: 10, height: 10, borderRadius: 5 },
+  tabular: { fontVariant: ['tabular-nums'] },
   gap: { gap: Spacing.two },
   row: { flexDirection: 'row', gap: Spacing.two },
   flex: { flex: 1 },
