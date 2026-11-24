@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { HeaderShownContext } from 'expo-router/react-navigation';
+import { useContext, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
@@ -20,10 +21,13 @@ export function Screen({
   title,
   children,
   scroll = false,
-  edges = ['top', 'left', 'right'],
+  edges,
   contentStyle,
   headerRight,
 }: Props) {
+  // Com cabeçalho nativo visível, ele já ocupa a área do topo: não reservar de novo.
+  const headerShown = useContext(HeaderShownContext);
+  const safeEdges: Edge[] = edges ?? (headerShown ? ['left', 'right'] : ['top', 'left', 'right']);
   const body = (
     <View style={[styles.content, contentStyle]}>
       {title ? (
@@ -40,7 +44,7 @@ export function Screen({
 
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.root} edges={edges}>
+      <SafeAreaView style={styles.root} edges={safeEdges}>
         {scroll ? (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             {body}
