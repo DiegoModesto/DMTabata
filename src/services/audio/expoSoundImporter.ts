@@ -1,5 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { rebaseDocumentUri } from '@/domain/sounds';
+
 import type { PickedSound, SoundImporter } from './soundImporter';
 
 const soundsDir = () => new Directory(Paths.document, 'sounds');
@@ -33,8 +35,10 @@ export function createExpoSoundImporter(): SoundImporter {
       return destination.uri;
     },
 
+    resolve: (uri: string) => rebaseDocumentUri(uri, Paths.document.uri),
+
     async remove(uri: string) {
-      const file = new File(uri);
+      const file = new File(rebaseDocumentUri(uri, Paths.document.uri));
       if (file.exists) file.delete();
     },
   };

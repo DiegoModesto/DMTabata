@@ -223,3 +223,16 @@ describe('soundService — música de fundo', () => {
     expect((await soundService.settingsForWorkout(workout)).backgroundMusicId).toBeNull();
   });
 });
+
+describe('soundService — sons após reinstalar o app', () => {
+  it('registra no player o caminho atual, mesmo se a pasta do app mudou', async () => {
+    const { soundService, sounds, fake, alertPlayer } = await setup();
+    const s = await sounds.addUserSound({
+      name: 'Corneta',
+      uri: 'file:///var/Application/VELHO/Documents/sounds/c.mp3',
+    });
+    fake.state.documentDir = 'file:///var/Application/NOVO/Documents/';
+    await soundService.registerUserSources();
+    expect(alertPlayer.sources[s.id]).toBe('file:///var/Application/NOVO/Documents/sounds/c.mp3');
+  });
+});

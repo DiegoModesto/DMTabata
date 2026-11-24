@@ -14,4 +14,6 @@ export interface SoundImporter {
   /** Copia um arquivo já local (ex.: gravação temporária) para o diretório do app. */
   persistFile(sourceUri: string, soundId: string, extension: string): Promise<string>;
   remove(uri: string): Promise<void>;
+  /** Uri salva → uri válida agora (a pasta do app pode ter mudado de caminho). */
+  resolve(uri: string): string;
 }

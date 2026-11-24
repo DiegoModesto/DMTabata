@@ -37,6 +37,7 @@ const unavailableImporter: SoundImporter = {
     throw new Error('Gravação de sons indisponível.');
   },
   remove: async () => {},
+  resolve: (uri) => uri,
 };
 
 const unavailableBackupIO: BackupIO = {

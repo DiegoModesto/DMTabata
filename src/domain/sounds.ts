@@ -166,3 +166,20 @@ export function recordingExtension(uri: string): string {
   const ext = match?.[1]?.toLowerCase() ?? '';
   return (IMPORT_LIMITS.extensions as readonly string[]).includes(ext) ? ext : 'm4a';
 }
+
+// ---------- Caminho dos arquivos ----------
+
+const DOCUMENTS_MARKER = '/Documents/';
+
+/**
+ * O iOS pode mudar o caminho da pasta do app entre instalações/atualizações.
+ * Reancora uma uri salva (`file:///…/Documents/sounds/x.mp3`) na pasta atual.
+ * Uris sem a pasta Documents (ou não-arquivo) ficam como estão.
+ */
+export function rebaseDocumentUri(uri: string, documentDirUri: string): string {
+  if (!uri.startsWith('file://')) return uri;
+  const at = uri.indexOf(DOCUMENTS_MARKER);
+  if (at < 0) return uri;
+  const base = documentDirUri.endsWith('/') ? documentDirUri : `${documentDirUri}/`;
+  return base + uri.slice(at + DOCUMENTS_MARKER.length);
+}
