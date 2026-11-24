@@ -1,4 +1,4 @@
-import { DEFAULT_ALERT_SETTINGS, type AlertCommand } from '@/domain/alerts';
+import { DEFAULT_ALERT_SETTINGS, type AlertCommand, type AlertSettings } from '@/domain/alerts';
 import { compileTimeline } from '@/domain/timeline';
 import { createTabataWorkout } from '@/domain/workout';
 import { planExampleWorkout } from '@/test/factories';
@@ -196,5 +196,47 @@ describe('timerController — música de fundo', () => {
     const timeline = compileTimeline(createTabataWorkout());
     const controller = createTimerController(timeline, { ...settings, volume: 0 });
     expect(music(controller.dispatch('start', 0).commands)).toEqual([]);
+  });
+});
+
+describe('timerController — segundos finais com a música abaixada', () => {
+  const settings = { ...DEFAULT_ALERT_SETTINGS, backgroundMusicId: 'vibes', volume: 0.6 };
+
+  function collect(until: number, s: AlertSettings = settings) {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, s);
+    const commands: AlertCommand[] = [...controller.dispatch('start', 0).commands];
+    for (let t = 100; t <= until; t += 100) commands.push(...controller.update(t).commands);
+    return commands;
+  }
+
+  it('bipes da contagem tocam no volume máximo, mesmo com o volume dos alertas menor', () => {
+    const commands = collect(16_500);
+    const beeps = commands.filter((c) => c.type === 'sound' && c.slot === 'countdown');
+    expect(beeps).toHaveLength(3);
+    expect(beeps.every((c) => c.type === 'sound' && c.volume === 1)).toBe(true);
+    expect(commands.find((c) => c.type === 'sound' && c.slot === 'workStart')).toMatchObject({
+      volume: 0.6,
+    });
+  });
+
+  it('abaixa a música no primeiro bipe e libera na troca de fase (uma vez por fase)', () => {
+    const music = collect(16_500)
+      .filter((c) => c.type === 'music')
+      .map((c) => (c.type === 'music' ? c.action : ''));
+    expect(music).toEqual(['start', 'duck', 'unduck']);
+  });
+
+  it('a liberação vem antes do som da nova fase', () => {
+    const commands = collect(16_500);
+    const unduck = commands.findIndex((c) => c.type === 'music' && c.action === 'unduck');
+    const work = commands.findIndex((c) => c.type === 'sound' && c.slot === 'workStart');
+    expect(unduck).toBeGreaterThanOrEqual(0);
+    expect(unduck).toBeLessThan(work);
+  });
+
+  it('sem música de fundo não há comandos de abaixar', () => {
+    const commands = collect(16_500, { ...settings, backgroundMusicId: null });
+    expect(commands.some((c) => c.type === 'music')).toBe(false);
   });
 });

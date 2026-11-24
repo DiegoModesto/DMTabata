@@ -301,7 +301,7 @@ describe('SoundSettingsScreen — música de fundo', () => {
     await waitFor(async () =>
       expect(await services.soundService.settingsForWorkout(planExampleWorkout())).toMatchObject({
         backgroundMusicId: vibes.id,
-        musicVolume: 0.3,
+        musicVolume: 0.95,
       }),
     );
   });

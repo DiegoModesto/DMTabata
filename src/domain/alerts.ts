@@ -98,7 +98,7 @@ export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
   surpriseSounds: [],
   surpriseChance: 0.3,
   backgroundMusicId: null,
-  musicVolume: 0.35,
+  musicVolume: 1,
 };
 
 export type AlertCommand =
@@ -114,6 +114,8 @@ export type AlertCommand =
   /** Música de fundo: começa em loop, pausa, retoma e para junto com o treino. */
   | { type: 'music'; action: 'start'; soundId: SoundId; volume: number }
   | { type: 'music'; action: 'pause' | 'resume' | 'stop' }
+  /** Abaixa a música durante os segundos finais da fase / libera na troca de fase. */
+  | { type: 'music'; action: 'duck' | 'unduck' }
   | { type: 'haptic'; style: HapticStyle }
   | { type: 'speak'; text: string; lang: string };
 
@@ -201,7 +203,9 @@ export function alertsForEvents(events: TimerEvent[], settings: AlertSettings): 
     if (slot) {
       const soundId = soundForEvent(event, slot, settings);
       if (soundId && soundId !== SILENT_SOUND_ID && settings.volume > 0) {
-        commands.push({ type: 'sound', soundId, volume: settings.volume, slot });
+        // Os bipes dos segundos finais tocam sempre no volume máximo.
+        const volume = slot === 'countdown' ? 1 : settings.volume;
+        commands.push({ type: 'sound', soundId, volume, slot });
       }
       if (settings.hapticsEnabled) {
         commands.push({ type: 'haptic', style: HAPTIC_BY_SLOT[slot] });
