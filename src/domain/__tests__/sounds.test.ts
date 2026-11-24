@@ -11,6 +11,7 @@ import {
   nextRecordingName,
   RECORDING_LIMITS,
   recordingExtension,
+  rebaseDocumentUri,
   recordingName,
   SOUND_CATEGORY_ORDER,
   soundCategory,
@@ -178,5 +179,29 @@ describe('nomes e extensão das gravações', () => {
     expect(recordingExtension('file:///tmp/rec.wav?x=1')).toBe('wav');
     expect(recordingExtension('file:///tmp/rec.3gp')).toBe('m4a');
     expect(recordingExtension('file:///tmp/semextensao')).toBe('m4a');
+  });
+});
+
+describe('rebaseDocumentUri — pasta do app mudou de caminho', () => {
+  const now = 'file:///var/mobile/Containers/Data/Application/NOVO/Documents/';
+
+  it('reancora sons salvos com o caminho antigo na pasta atual', () => {
+    expect(
+      rebaseDocumentUri(
+        'file:///var/mobile/Containers/Data/Application/VELHO/Documents/sounds/a.mp3',
+        now,
+      ),
+    ).toBe(`${now}sounds/a.mp3`);
+  });
+
+  it('aceita a pasta atual com ou sem barra final', () => {
+    expect(rebaseDocumentUri('file:///x/Documents/sounds/b.m4a', now.slice(0, -1))).toBe(
+      `${now}sounds/b.m4a`,
+    );
+  });
+
+  it('não mexe em sons embutidos nem em arquivos fora de Documents', () => {
+    expect(rebaseDocumentUri('builtin:gong', now)).toBe('builtin:gong');
+    expect(rebaseDocumentUri('file:///tmp/rec.m4a', now)).toBe('file:///tmp/rec.m4a');
   });
 });

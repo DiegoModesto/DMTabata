@@ -48,7 +48,9 @@ export function createSoundService(deps: {
     async registerUserSources(): Promise<void> {
       const list = await sounds.list();
       alertPlayer.registerSources(
-        Object.fromEntries(list.filter((s) => s.source === 'user').map((s) => [s.id, s.uri])),
+        Object.fromEntries(
+          list.filter((s) => s.source === 'user').map((s) => [s.id, importer.resolve(s.uri)]),
+        ),
       );
     },
 
