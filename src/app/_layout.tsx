@@ -3,6 +3,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { detailHeaderOptions } from '@/components/navigation/detail-header';
+import { useTheme } from '@/hooks/use-theme';
 import { ServicesProvider, useAuth } from '@/providers/services-provider';
 import { createExpoAlertPlayer } from '@/services/audio/expoAlertPlayer';
 import { createExpoSoundImporter } from '@/services/audio/expoSoundImporter';
@@ -23,6 +25,8 @@ const createOverrides = (): ServiceOverrides => ({
 function RootNavigator() {
   const status = useAuth((s) => s.status);
   const signedIn = status === 'signedIn';
+  const theme = useTheme();
+  const detail = detailHeaderOptions(theme);
 
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -37,12 +41,12 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="workout/templates" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout/new" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="workout/[id]/index" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="workout/[id]/index" options={detail} />
         <Stack.Screen name="workout/[id]/edit" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="workout/[id]/sounds" options={{ headerShown: true, title: '' }} />
-        <Stack.Screen name="sounds" options={{ headerShown: true, title: '' }} />
-        <Stack.Screen name="workout/[id]/stats" options={{ headerShown: true, title: '' }} />
-        <Stack.Screen name="session/[id]/index" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="workout/[id]/sounds" options={detail} />
+        <Stack.Screen name="sounds" options={detail} />
+        <Stack.Screen name="workout/[id]/stats" options={detail} />
+        <Stack.Screen name="session/[id]/index" options={detail} />
         <Stack.Screen name="session/[id]/feedback" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="player/[id]"
