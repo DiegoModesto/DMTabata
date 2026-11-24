@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   white: { color: WHITE },
   centerText: { textAlign: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
-  phaseLabel: { fontSize: 22, letterSpacing: 2 },
+  phaseLabel: { fontSize: 22, lineHeight: 30, letterSpacing: 2 },
   clock: { fontSize: 112, lineHeight: 124, fontWeight: '700', fontVariant: ['tabular-nums'] },
   phaseProgress: { width: '80%' },
   progressTrack: {
