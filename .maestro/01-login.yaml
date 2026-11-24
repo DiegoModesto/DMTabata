@@ -1,0 +1,26 @@
+# Login simulado: qualquer valor entra e leva às abas.
+appId: com.dmtabata.app
+name: Login mock
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: allow
+      microphone: allow
+# No iOS 26 o alerta de notificações ainda pode aparecer: aceita se surgir.
+- tapOn:
+    text: "Permitir"
+    optional: true
+- extendedWaitUntil:
+    visible: "Entrar"
+    timeout: 60000
+- takeScreenshot: .maestro/screenshots/01-login
+- tapOn: "E-mail"
+- inputText: "diego@exemplo.com"
+- tapOn: "Senha"
+- inputText: "123"
+- tapOn: "Entrar"
+- extendedWaitUntil:
+    visible: "Crie seu primeiro treino"
+    timeout: 15000
+- takeScreenshot: .maestro/screenshots/02-lista-vazia

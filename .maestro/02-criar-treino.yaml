@@ -1,0 +1,53 @@
+# Cenário do plano: 5 exercícios de 30s/10s com o 3º em 60s → ciclo 3min40s.
+# Preparação mínima de 16s → total 3min56s. O stepper muda de 1 em 1.
+appId: com.dmtabata.app
+name: Criar treino com tempo diferente no 3º exercício
+---
+- launchApp:
+    permissions:
+      notifications: allow
+      microphone: allow
+# No iOS 26 o alerta de notificações ainda pode aparecer: aceita se surgir.
+- tapOn:
+    text: "Permitir"
+    optional: true
+- tapOn: "Criar treino"
+- assertVisible: "Modelo Tabata"
+- takeScreenshot: .maestro/screenshots/03-modelos
+- tapOn: "Modelo Personalizado"
+# Preparação já nasce no mínimo (16s) e não desce
+- assertVisible: "Preparação: 0:16"
+- tapOn: "Diminuir Preparação"
+- assertVisible: "Preparação: 0:16"
+- tapOn:
+    id: "input:Nome do treino"
+- inputText: "Treino de perna"
+- pressKey: Enter
+- assertVisible: "Treino de perna"
+- scrollUntilVisible:
+    element: "Editar Exercício 3"
+- tapOn: "Editar Exercício 3"
+- tapOn:
+    id: "input:Nome do exercício"
+- eraseText: 20
+- inputText: "Prancha"
+- pressKey: Enter
+- repeat:
+    times: 30
+    commands:
+      - tapOn: "Aumentar Trabalho"
+- assertVisible: "Trabalho: 1:00"
+- takeScreenshot: .maestro/screenshots/04-exercicio-60s
+- tapOn: "Concluir"
+- scrollUntilVisible:
+    element: "Tempo do ciclo: 3min40s"
+- scrollUntilVisible:
+    element: "Tempo total 3min56s"
+- takeScreenshot: .maestro/screenshots/05-editor-total
+- tapOn: "Salvar"
+- extendedWaitUntil:
+    visible: "▶ Começar"
+    timeout: 10000
+- assertVisible: "Tempo total 3min56s"
+- assertVisible: "Ciclo 1, 3min40s"
+- takeScreenshot: .maestro/screenshots/06-detalhe

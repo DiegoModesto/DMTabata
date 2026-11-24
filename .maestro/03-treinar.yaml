@@ -1,0 +1,53 @@
+# Executa o treino (pulando fases), avalia e confere as estatísticas.
+appId: com.dmtabata.app
+name: Treinar, avaliar e ver estatísticas
+---
+- launchApp:
+    permissions:
+      notifications: allow
+      microphone: allow
+# No iOS 26 o alerta de notificações ainda pode aparecer: aceita se surgir.
+- tapOn:
+    text: "Permitir"
+    optional: true
+- tapOn: "Abrir treino Treino de perna"
+- tapOn: "▶ Começar"
+# Se o iOS ainda pedir permissão de notificações, aceita.
+- tapOn:
+    text: "Permitir"
+    optional: true
+- extendedWaitUntil:
+    visible: "PREPARAR"
+    timeout: 10000
+- takeScreenshot: .maestro/screenshots/07-player-preparar
+- tapOn: "Pular"
+- assertVisible: "TRABALHO"
+- assertVisible: "Exercício 1"
+- takeScreenshot: .maestro/screenshots/08-player-trabalho
+- tapOn: "Pausar"
+- assertVisible: "PAUSADO"
+- assertVisible: "Continuar"
+- tapOn: "Continuar"
+- tapOn: "Pular"
+- assertVisible: "DESCANSO"
+- takeScreenshot: .maestro/screenshots/09-player-descanso
+- repeat:
+    while:
+      notVisible: "Treino concluído!"
+    commands:
+      - tapOn: "Pular"
+- takeScreenshot: .maestro/screenshots/10-concluido
+- tapOn: "Avaliar treino"
+- extendedWaitUntil:
+    visible: "Como foi o treino?"
+    timeout: 10000
+- tapOn: "4 ★"
+- tapOn: "Ideal"
+- tapOn: "Ótimo"
+- takeScreenshot: .maestro/screenshots/11-feedback
+- tapOn: "Salvar"
+- extendedWaitUntil:
+    visible: "vezes realizado: 1"
+    timeout: 10000
+- assertVisible: "nota média: 4,0"
+- takeScreenshot: .maestro/screenshots/12-estatisticas-treino

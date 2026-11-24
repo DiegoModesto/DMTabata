@@ -61,3 +61,15 @@ src/
 ### Fluxo de trabalho
 
 Cada fase do plano é desenvolvida em uma branch `fase-N/...`, com testes, e entra na `main` via Pull Request com CI (typecheck, lint e testes).
+- **E2E (Maestro)**: fluxos em `.maestro/` que rodam no app real num simulador — login, criar treino (cenário do plano), treinar/avaliar e sons.
+
+#### Rodando os testes E2E
+
+Requer [Maestro](https://maestro.dev), um development build instalado no simulador e o Metro rodando (`npx expo start`).
+
+```bash
+npm run e2e                               # usa o simulador ativo
+maestro --device <UDID> test .maestro/... # escolhe o simulador
+```
+
+> O primeiro fluxo começa com `clearState` (apaga os dados do app). Use um simulador só para testes se você também testa manualmente.
