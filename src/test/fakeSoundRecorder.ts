@@ -21,6 +21,7 @@ export function resetRecorderControl() {
 export function useSoundRecorder(): SoundRecorderState {
   const [status, setStatus] = useState<SoundRecorderState['status']>('idle');
   const [recording, setRecording] = useState<Recording | null>(null);
+  const [playing, setPlaying] = useState(false);
   return {
     status,
     recording,
@@ -38,10 +39,13 @@ export function useSoundRecorder(): SoundRecorderState {
       setRecording({ ...recorderControl.next });
       setStatus('recorded');
     },
-    playRecording: () => {
-      recorderControl.played++;
+    playing,
+    togglePlayback: () => {
+      if (!playing) recorderControl.played++;
+      setPlaying(!playing);
     },
     reset: () => {
+      setPlaying(false);
       const previous = recording;
       setRecording(null);
       setStatus('idle');

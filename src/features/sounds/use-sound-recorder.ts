@@ -4,6 +4,7 @@ import {
   setAudioModeAsync,
   useAudioPlayer,
   useAudioRecorder,
+  useAudioPlayerStatus,
   useAudioRecorderState,
   type RecordingStatus,
 } from 'expo-audio';
@@ -21,7 +22,10 @@ export type SoundRecorderState = {
   recording: Recording | null;
   start: () => Promise<void>;
   stop: () => Promise<void>;
-  playRecording: () => void;
+  /** A gravação está tocando (pré-escuta). */
+  playing: boolean;
+  /** Ouve a gravação do início, ou pausa se já estiver tocando. */
+  togglePlayback: () => void;
   /** Volta ao estado inicial, devolvendo a gravação que havia (para descarte). */
   reset: () => Recording | null;
 };
@@ -109,24 +113,32 @@ export function useSoundRecorder(): SoundRecorderState {
     }
   }, [recorder, finalize]);
 
-  const playRecording = useCallback(() => {
+  const playerStatus = useAudioPlayerStatus(player);
+  const playing = !!recording && playerStatus.playing;
+
+  const togglePlayback = useCallback(() => {
+    if (playing) {
+      player.pause();
+      return;
+    }
     void player
       .seekTo(0)
       .then(() => player.play())
       .catch(() => player.play());
-  }, [player]);
+  }, [player, playing]);
 
   const reset = useCallback(() => {
+    if (playing) player.pause();
     const previous = recording;
     setRecording(null);
     setStatus('idle');
     return previous;
-  }, [recording]);
+  }, [recording, playing, player]);
 
   const elapsedMs =
     status === 'recording'
       ? Math.min(recorderState.durationMillis, RECORDING_LIMITS.maxMs)
       : (recording?.durationMs ?? 0);
 
-  return { status, elapsedMs, recording, start, stop, playRecording, reset };
+  return { status, elapsedMs, recording, start, stop, playing, togglePlayback, reset };
 }

@@ -355,13 +355,15 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
         )}
         <View style={styles.buttons}>
           <Button
-            title="● Gravar som"
+            title="Gravar som"
+            icon="mic"
             variant="secondary"
             onPress={() => setRecording(true)}
             style={styles.flex}
           />
           <Button
             title="Importar som"
+            icon="upload"
             variant="secondary"
             onPress={importSound}
             style={styles.flex}

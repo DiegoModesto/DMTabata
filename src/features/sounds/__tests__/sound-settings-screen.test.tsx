@@ -342,7 +342,7 @@ describe('SoundSettingsScreen — gravar som (até 3 s)', () => {
     const ctx = await setup();
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, ctx.services);
-    await fireEvent.press(await screen.findByRole('button', { name: '● Gravar som' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Gravar som' }));
     expect(screen.getByRole('header', { name: 'Gravar som' })).toBeTruthy();
     return { ...ctx, alert };
   }
@@ -351,13 +351,17 @@ describe('SoundSettingsScreen — gravar som (até 3 s)', () => {
 
   it('grava, ouve, dá nome e salva: o som entra em "Meus sons" e no seletor', async () => {
     const { services, fake, alert } = await openRecorder();
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
     expect(screen.getByText(/Gravando/)).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: '■ Parar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
     expect(screen.getByText('2,1 s / 3,0 s')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: '▶ Ouvir' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir' }));
     expect(recorderControl.played).toBe(1);
+    // Ouvir vira Pausar enquanto toca
+    await fireEvent.press(screen.getByRole('button', { name: 'Pausar' }));
+    expect(screen.getByRole('button', { name: 'Ouvir' })).toBeTruthy();
+    expect(screen.queryByText(/[●■▶]/u)).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('Nome do som'), 'Grito de guerra');
     await fireEvent.press(screen.getByRole('button', { name: 'Salvar som' }));
 
@@ -377,8 +381,8 @@ describe('SoundSettingsScreen — gravar som (até 3 s)', () => {
 
   it('sem nome digitado, salva com o nome sugerido', async () => {
     const { services } = await openRecorder();
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
-    await fireEvent.press(screen.getByRole('button', { name: '■ Parar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
     expect(screen.getByLabelText('Nome do som').props.placeholder).toBe('Gravação 1');
     await fireEvent.press(screen.getByRole('button', { name: 'Salvar som' }));
     expect(await screen.findByRole('button', { name: 'Ouvir Gravação 1' })).toBeTruthy();
@@ -390,17 +394,17 @@ describe('SoundSettingsScreen — gravar som (até 3 s)', () => {
     await ctx.services.sounds.addUserSound({ name: 'Gravação 1', uri: 'file:///g1.m4a' });
     await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, ctx.services);
     await screen.findByRole('button', { name: 'Ouvir Gravação 1' });
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar som' }));
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
-    await fireEvent.press(screen.getByRole('button', { name: '■ Parar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar som' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
     expect(screen.getByLabelText('Nome do som').props.placeholder).toBe('Gravação 2');
   });
 
   it('gravação curta demais é recusada e nada é salvo', async () => {
     const { services, alert } = await openRecorder();
     recorderControl.next = { uri: 'file:///cache/curta.m4a', durationMs: 100, sizeBytes: 500 };
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
-    await fireEvent.press(screen.getByRole('button', { name: '■ Parar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Salvar som' }));
     await waitFor(() =>
       expect(alert).toHaveBeenCalledWith(
@@ -409,23 +413,23 @@ describe('SoundSettingsScreen — gravar som (até 3 s)', () => {
       ),
     );
     expect((await services.soundService.library()).some((s) => s.source === 'user')).toBe(false);
-    expect(screen.getByRole('button', { name: '● Gravar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gravar' })).toBeTruthy();
   });
 
   it('regravar descarta a gravação anterior', async () => {
     const { fake } = await openRecorder();
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
-    await fireEvent.press(screen.getByRole('button', { name: '■ Parar' }));
-    await fireEvent.press(screen.getByRole('button', { name: '● Regravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Regravar' }));
     expect(fake.state.removed).toContain('file:///cache/rec.m4a');
     expect(recorderControl.started).toBe(2);
-    expect(screen.getByRole('button', { name: '■ Parar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy();
   });
 
   it('cancelar depois de gravar descarta o arquivo e não salva', async () => {
     const { services, fake } = await openRecorder();
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
-    await fireEvent.press(screen.getByRole('button', { name: '■ Parar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
     expect(fake.state.removed).toContain('file:///cache/rec.m4a');
     expect((await services.soundService.library()).some((s) => s.source === 'user')).toBe(false);
@@ -434,7 +438,7 @@ describe('SoundSettingsScreen — gravar som (até 3 s)', () => {
   it('sem permissão de microfone, explica e oferece abrir os ajustes', async () => {
     await openRecorder();
     recorderControl.permission = false;
-    await fireEvent.press(screen.getByRole('button', { name: '● Gravar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Gravar' }));
     expect(screen.getByText(/Sem acesso ao microfone/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Abrir ajustes' })).toBeTruthy();
   });
