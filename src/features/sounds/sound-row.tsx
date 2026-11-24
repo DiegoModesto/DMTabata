@@ -4,16 +4,20 @@ import { ThemedText } from '@/components/themed-text';
 import { IconButton } from '@/components/ui/icon-button';
 import { Spacing } from '@/constants/theme';
 
+import { previewButton } from './use-sound-preview';
+
 type Props = {
   label: string;
   value: string;
   inherited?: boolean;
   onPress: () => void;
   onPreview?: () => void;
+  /** Pré-escuta tocando: o botão vira "pausar". */
+  playing?: boolean;
 };
 
 /** Linha "Evento → som escolhido" que abre o seletor. */
-export function SoundRow({ label, value, inherited, onPress, onPreview }: Props) {
+export function SoundRow({ label, value, inherited, onPress, onPreview, playing = false }: Props) {
   return (
     <View style={styles.row}>
       <Pressable
@@ -30,7 +34,7 @@ export function SoundRow({ label, value, inherited, onPress, onPreview }: Props)
           {inherited ? ' (padrão)' : ''} ›
         </ThemedText>
       </Pressable>
-      {onPreview ? <IconButton glyph="▶" label={`Ouvir ${label}`} onPress={onPreview} /> : null}
+      {onPreview ? <IconButton {...previewButton(playing, label)} onPress={onPreview} /> : null}
     </View>
   );
 }

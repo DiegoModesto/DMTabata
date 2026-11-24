@@ -225,6 +225,65 @@ describe('SoundSettingsScreen — sons surpresa', () => {
   });
 });
 
+describe('SoundSettingsScreen — pré-escuta com play/pause', () => {
+  async function setupMine() {
+    const ctx = await setup();
+    await ctx.services.sounds.addUserSound({ name: 'Corneta', uri: 'file:///c.mp3' });
+    await ctx.services.sounds.addUserSound({ name: 'Chicote', uri: 'file:///x.mp3' });
+    await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, ctx.services);
+    await screen.findByRole('button', { name: 'Ouvir Corneta' });
+    return ctx;
+  }
+
+  it('tocar vira "pausar"; tocar de novo para o áudio e volta a "ouvir"', async () => {
+    const { alertPlayer } = await setupMine();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Corneta' }));
+    expect(alertPlayer.previewed).toHaveLength(1);
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar Corneta' }));
+    expect(alertPlayer.previewStops).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+  });
+
+  it('quando o áudio termina sozinho, o botão volta a "ouvir"', async () => {
+    const { alertPlayer } = await setupMine();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Corneta' }));
+    expect(screen.getByRole('button', { name: 'Parar Corneta' })).toBeTruthy();
+    await act(async () => alertPlayer.finishPreview?.());
+    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+  });
+
+  it('ouvir outro som troca a pausa para ele (só um toca por vez)', async () => {
+    await setupMine();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Corneta' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Chicote' }));
+    expect(screen.getByRole('button', { name: 'Parar Chicote' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+  });
+
+  it('o mesmo som em outro lugar da tela não mostra pausa junto', async () => {
+    const { services } = await setupMine();
+    const corneta = (await services.soundService.library()).find((s) => s.name === 'Corneta')!;
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Início do trabalho: Largada (padrão)' }),
+    );
+    await fireEvent.press(screen.getByRole('radio', { name: 'Corneta' }));
+    expect(corneta).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Início do trabalho' }));
+    expect(screen.getByRole('button', { name: 'Parar Início do trabalho' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+  });
+
+  it('no seletor também alterna, e fechar para o áudio', async () => {
+    const { alertPlayer } = await setupMine();
+    await fireEvent.press(screen.getByRole('button', { name: /Início do descanso:/ }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Sino de ringue' }));
+    expect(screen.getByRole('button', { name: 'Parar Sino de ringue' })).toBeTruthy();
+    const stops = alertPlayer.previewStops;
+    await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
+    expect(alertPlayer.previewStops).toBeGreaterThan(stops);
+  });
+});
+
 describe('SoundSettingsScreen — seletor por categoria', () => {
   it('mostra os sons agrupados (ringue, alertas) e permite escolher o sino de ringue', async () => {
     const { services } = await setup();

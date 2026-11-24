@@ -30,6 +30,22 @@ export function createExpoAlertPlayer(): AlertPlayer {
   const players = new Map<SoundId, AudioPlayer>();
   const userSources: Record<SoundId, string> = {};
   let currentMode: AudioOptions | null = null;
+  /** Pré-escuta em andamento (tela de sons). */
+  let currentPreview: { player: AudioPlayer; sub: { remove(): void } } | null = null;
+
+  function stopPreview() {
+    if (!currentPreview) return;
+    const { player, sub } = currentPreview;
+    currentPreview = null;
+    sub.remove();
+    try {
+      player.pause();
+      void player.seekTo(0).catch(() => {});
+    } catch {
+      // player já liberado
+    }
+  }
+
   /** Som do canal "surpresa" tocando agora (um novo interrompe o anterior). */
   let currentSurprise: AudioPlayer | null = null;
 
@@ -111,10 +127,26 @@ export function createExpoAlertPlayer(): AlertPlayer {
           Speech.speak(command.text, { language: command.lang, useApplicationAudioSession: true });
       }
     },
-    preview(soundId, volume = 1) {
-      void applyAudioMode(currentMode ?? undefined).then(() => play(soundId, volume));
+    preview(soundId, volume = 1, onEnd) {
+      stopPreview();
+      void applyAudioMode(currentMode ?? undefined).then(() => {
+        const player = play(soundId, volume);
+        if (!player) {
+          onEnd?.();
+          return;
+        }
+        const sub = player.addListener('playbackStatusUpdate', (status) => {
+          if (!status.didJustFinish || currentPreview?.player !== player) return;
+          currentPreview.sub.remove();
+          currentPreview = null;
+          onEnd?.();
+        });
+        currentPreview = { player, sub };
+      });
     },
+    stopPreview,
     release() {
+      stopPreview();
       currentSurprise = null;
       void Speech.stop();
       players.forEach((p) => p.remove());

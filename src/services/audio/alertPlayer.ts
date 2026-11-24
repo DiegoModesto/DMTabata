@@ -12,8 +12,13 @@ export interface AlertPlayer {
   /** Configura a sessão de áudio e pré-carrega os sons para tocar sem latência. */
   prepare(soundIds: SoundId[], options?: AudioOptions): Promise<void>;
   execute(commands: AlertCommand[]): void;
-  /** Toca um som avulso (pré-escuta na tela de sons). */
-  preview(soundId: SoundId, volume?: number): void;
+  /**
+   * Toca um som avulso (pré-escuta). Interrompe a pré-escuta anterior.
+   * `onEnd` é chamado quando o som termina sozinho (não quando é parado).
+   */
+  preview(soundId: SoundId, volume?: number, onEnd?: () => void): void;
+  /** Para a pré-escuta em andamento, se houver. */
+  stopPreview(): void;
   /** Interrompe a fala e libera recursos de áudio. */
   release(): void;
 }
@@ -23,6 +28,9 @@ export function createSilentAlertPlayer() {
   const state = {
     executed: [] as AlertCommand[],
     previewed: [] as SoundId[],
+    previewStops: 0,
+    /** Simula o fim natural da pré-escuta atual (testes). */
+    finishPreview: null as (() => void) | null,
     prepared: [] as SoundId[],
     options: null as AudioOptions | null,
     sources: {} as Record<SoundId, string>,
@@ -39,8 +47,18 @@ export function createSilentAlertPlayer() {
     execute(commands: AlertCommand[]) {
       state.executed.push(...commands);
     },
-    preview(soundId: SoundId) {
+    preview(soundId: SoundId, _volume?: number, onEnd?: () => void) {
       state.previewed.push(soundId);
+      state.finishPreview = onEnd
+        ? () => {
+            state.finishPreview = null;
+            onEnd();
+          }
+        : null;
+    },
+    stopPreview() {
+      state.previewStops++;
+      state.finishPreview = null;
     },
     release() {
       state.released++;

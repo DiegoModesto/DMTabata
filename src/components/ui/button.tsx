@@ -1,6 +1,14 @@
-import { ActivityIndicator, Pressable, StyleSheet, type PressableProps, type ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  View,
+  type PressableProps,
+  type ViewStyle,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Icon, type IconName } from '@/components/ui/icon';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -11,9 +19,19 @@ type Props = Omit<PressableProps, 'style' | 'children'> & {
   variant?: Variant;
   loading?: boolean;
   style?: ViewStyle;
+  /** Ícone à esquerda do texto. */
+  icon?: IconName;
 };
 
-export function Button({ title, variant = 'primary', loading, disabled, style, ...rest }: Props) {
+export function Button({
+  title,
+  variant = 'primary',
+  loading,
+  disabled,
+  style,
+  icon,
+  ...rest
+}: Props) {
   const theme = useTheme();
   const isDisabled = disabled || loading;
 
@@ -40,9 +58,12 @@ export function Button({ title, variant = 'primary', loading, disabled, style, .
       {loading ? (
         <ActivityIndicator color={color} />
       ) : (
-        <ThemedText type="smallBold" style={[styles.label, { color }]}>
-          {title}
-        </ThemedText>
+        <View style={styles.inner}>
+          {icon ? <Icon name={icon} size={18} color={color} /> : null}
+          <ThemedText type="smallBold" style={[styles.label, { color }]}>
+            {title}
+          </ThemedText>
+        </View>
       )}
     </Pressable>
   );
@@ -56,5 +77,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  inner: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   label: { fontSize: 16 },
 });

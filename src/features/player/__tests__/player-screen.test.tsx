@@ -90,11 +90,11 @@ describe('PlayerScreen — temporizador com sons', () => {
   it('pausar congela o relógio e continuar retoma', async () => {
     await setup();
     await advance(2_000);
-    await fireEvent.press(screen.getByRole('button', { name: '⏸ Pausar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Pausar' }));
     expect(screen.getByText('PAUSADO')).toBeTruthy();
     await advance(5_000);
     expect(screen.getByText('0:08')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: '▶ Continuar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
     await advance(1_000);
     expect(screen.getByText('0:07')).toBeTruthy();
   });
@@ -102,7 +102,7 @@ describe('PlayerScreen — temporizador com sons', () => {
   it('pular vai direto ao exercício e mostra o 3º com 60s', async () => {
     await setup();
     for (let i = 0; i < 5; i++) {
-      await fireEvent.press(screen.getByRole('button', { name: 'Pular ⏭' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Pular' }));
     }
     expect(screen.getByText('Prancha')).toBeTruthy();
     expect(screen.getByText('1:00')).toBeTruthy();
@@ -249,18 +249,28 @@ describe('PlayerScreen — temporizador com sons', () => {
 
     it('pausado não agenda notificações', async () => {
       const { notifier } = await setup();
-      await fireEvent.press(screen.getByRole('button', { name: '⏸ Pausar' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Pausar' }));
       await emit('background');
       expect(notifier.scheduled).toEqual([]);
     });
   });
 
+  it('controles sem emoji: nomes limpos e pausar vira continuar', async () => {
+    await setup();
+    for (const name of ['Voltar', 'Pausar', 'Pular', 'Parar', 'Bloquear controles']) {
+      expect(screen.getByRole('button', { name })).toBeTruthy();
+    }
+    expect(screen.queryByText(/[⏮⏸⏭▶🔒]/u)).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Pausar' }));
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeTruthy();
+  });
+
   it('bloquear esconde os controles; segurar desbloqueia', async () => {
     await setup();
     await fireEvent.press(screen.getByRole('button', { name: 'Bloquear controles' }));
-    expect(screen.queryByRole('button', { name: '⏸ Pausar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Pausar' })).toBeNull();
     await fireEvent(screen.getByRole('button', { name: 'Desbloquear controles' }), 'longPress');
-    expect(screen.getByRole('button', { name: '⏸ Pausar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Pausar' })).toBeTruthy();
   });
 
   it('AMRAP: conta rounds e grava na sessão', async () => {
