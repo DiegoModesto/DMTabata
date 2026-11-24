@@ -11,5 +11,7 @@ export interface SoundImporter {
   pick(): Promise<PickedSound | null>;
   /** Copia o arquivo para o diretório do app e devolve a uri definitiva. */
   persist(picked: PickedSound, soundId: string, extension: string): Promise<string>;
+  /** Copia um arquivo já local (ex.: gravação temporária) para o diretório do app. */
+  persistFile(sourceUri: string, soundId: string, extension: string): Promise<string>;
   remove(uri: string): Promise<void>;
 }

@@ -32,7 +32,16 @@ export type BuiltinSoundId =
   | 'horn'
   | 'go'
   | 'rest'
-  | 'finish';
+  | 'finish'
+  | 'ring-bell'
+  | 'ring-bell-3'
+  | 'clapper'
+  | 'tick'
+  | 'start-321'
+  | 'alarm'
+  | 'siren'
+  | 'buzzer'
+  | 'chime';
 
 /** Id de som: embutido, importado pelo usuário (uuid) ou `SILENT_SOUND_ID`. */
 export type SoundId = string;

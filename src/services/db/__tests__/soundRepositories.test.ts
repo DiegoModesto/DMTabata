@@ -1,3 +1,4 @@
+import { BUILTIN_SOUNDS } from '@/domain/sounds';
 import { emptySoundConfig } from '@/domain/soundConfig';
 import { planExampleWorkout } from '@/test/factories';
 import { createMigratedTestDatabase } from '@/test/sqliteTestDatabase';
@@ -24,10 +25,11 @@ describe('soundRepository', () => {
     const { sounds } = await setup();
     await sounds.addUserSound({ name: 'Meu apito', uri: 'file:///a.mp3' });
     const list = await sounds.list();
-    expect(list).toHaveLength(11);
-    expect(list.slice(0, 10).every((s) => s.source === 'builtin')).toBe(true);
+    const n = BUILTIN_SOUNDS.length;
+    expect(list).toHaveLength(n + 1);
+    expect(list.slice(0, n).every((s) => s.source === 'builtin')).toBe(true);
     expect(list[0].id).toBe('go');
-    expect(list[10]).toMatchObject({ name: 'Meu apito', source: 'user', uri: 'file:///a.mp3' });
+    expect(list[n]).toMatchObject({ name: 'Meu apito', source: 'user', uri: 'file:///a.mp3' });
   });
 
   it('renomeia só sons do usuário', async () => {
@@ -110,7 +112,11 @@ describe('workoutRepository + sons', () => {
   it('persiste os sons de cada exercício', async () => {
     const { workouts } = await setup();
     const workout = planExampleWorkout();
-    workout.cycles[0].items[2] = { ...workout.cycles[0].items[2], workSoundId: 'horn', restSoundId: 'silent' };
+    workout.cycles[0].items[2] = {
+      ...workout.cycles[0].items[2],
+      workSoundId: 'horn',
+      restSoundId: 'silent',
+    };
     await workouts.save(workout, null);
     const item = (await workouts.getById(workout.id))!.cycles[0].items[2];
     expect(item).toMatchObject({ workSoundId: 'horn', restSoundId: 'silent' });

@@ -1,5 +1,22 @@
 import { SILENT_SOUND_ID } from '../alerts';
-import { BUILTIN_SOUNDS, checkImport, IMPORT_LIMITS, soundName, type SoundEntry } from '../sounds';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import {
+  BUILTIN_SOUNDS,
+  checkImport,
+  checkRecording,
+  groupSounds,
+  IMPORT_LIMITS,
+  nextRecordingName,
+  RECORDING_LIMITS,
+  recordingExtension,
+  recordingName,
+  SOUND_CATEGORY_ORDER,
+  soundCategory,
+  soundName,
+  type SoundEntry,
+} from '../sounds';
 
 describe('checkImport — regras para importar sons', () => {
   it('aceita formatos de áudio comuns e gera nome legível', () => {
@@ -20,10 +37,12 @@ describe('checkImport — regras para importar sons', () => {
   });
 
   it('rejeita arquivos acima de 1 MB e vazios', () => {
-    expect(checkImport({ fileName: 'a.wav', sizeBytes: IMPORT_LIMITS.maxBytes + 1 })).toMatchObject({
-      ok: false,
-      reason: expect.stringContaining('1 MB'),
-    });
+    expect(checkImport({ fileName: 'a.wav', sizeBytes: IMPORT_LIMITS.maxBytes + 1 })).toMatchObject(
+      {
+        ok: false,
+        reason: expect.stringContaining('1 MB'),
+      },
+    );
     expect(checkImport({ fileName: 'a.wav', sizeBytes: 0 }).ok).toBe(false);
     expect(checkImport({ fileName: 'a.wav', sizeBytes: IMPORT_LIMITS.maxBytes }).ok).toBe(true);
   });
@@ -51,5 +70,113 @@ describe('soundName', () => {
     expect(soundName(SILENT_SOUND_ID, library)).toBe('Silencioso');
     expect(soundName(null, library)).toBe('Silencioso');
     expect(soundName('apagado', library)).toBe('Som removido');
+  });
+});
+
+describe('catálogo de sons embutidos', () => {
+  it('ids são únicos e todos têm categoria e nome', () => {
+    const ids = BUILTIN_SOUNDS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const s of BUILTIN_SOUNDS) {
+      expect(s.name.trim()).not.toBe('');
+      expect(SOUND_CATEGORY_ORDER).toContain(s.category);
+      expect(s.category).not.toBe('user');
+    }
+  });
+
+  it('tem sinais de ringue de boxe e alertas sonoros', () => {
+    const fight = BUILTIN_SOUNDS.filter((s) => s.category === 'fight').map((s) => s.id);
+    expect(fight).toEqual(expect.arrayContaining(['ring-bell', 'ring-bell-3', 'clapper']));
+    const alerts = BUILTIN_SOUNDS.filter((s) => s.category === 'alerts').map((s) => s.id);
+    expect(alerts).toEqual(expect.arrayContaining(['alarm', 'siren', 'chime', 'beep']));
+  });
+
+  it('todo som embutido tem arquivo em assets e está registrado para notificações', () => {
+    const root = path.join(__dirname, '..', '..', '..');
+    const appJson = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8'));
+    const plugin = appJson.expo.plugins.find(
+      (p: unknown) => Array.isArray(p) && p[0] === 'expo-notifications',
+    );
+    const registered: string[] = plugin[1].sounds;
+    for (const s of BUILTIN_SOUNDS) {
+      const file = `./assets/sounds/${s.id}.wav`;
+      expect(registered).toContain(file);
+      expect(fs.existsSync(path.join(root, file))).toBe(true);
+    }
+  });
+});
+
+describe('agrupamento por categoria', () => {
+  const entry = (id: string, source: 'builtin' | 'user', name = id): SoundEntry => ({
+    id,
+    name,
+    source,
+    uri: source === 'builtin' ? `builtin:${id}` : `file:///${id}.m4a`,
+    createdAt: 0,
+  });
+
+  it('classifica embutidos pelo catálogo e os do usuário como "Meus sons"', () => {
+    expect(soundCategory(entry('ring-bell', 'builtin'))).toBe('fight');
+    expect(soundCategory(entry('go', 'builtin'))).toBe('training');
+    expect(soundCategory(entry('alarm', 'builtin'))).toBe('alerts');
+    expect(soundCategory(entry('abc', 'user'))).toBe('user');
+    // id embutido desconhecido (ex.: de versão futura) cai em alertas
+    expect(soundCategory(entry('misterio', 'builtin'))).toBe('alerts');
+  });
+
+  it('agrupa na ordem de exibição e omite grupos vazios', () => {
+    const groups = groupSounds([
+      entry('alarm', 'builtin'),
+      entry('rec', 'user', 'Gravação 1'),
+      entry('ring-bell', 'builtin'),
+    ]);
+    expect(groups.map((g) => g.label)).toEqual(['Ringue e luta', 'Alertas sonoros', 'Meus sons']);
+    expect(groups[2].sounds.map((s) => s.name)).toEqual(['Gravação 1']);
+  });
+});
+
+describe('checkRecording — regras da gravação pelo microfone', () => {
+  it('aceita gravações entre o mínimo e 3 segundos', () => {
+    expect(checkRecording({ durationMs: 1500, sizeBytes: 20_000 })).toEqual({ ok: true });
+    expect(checkRecording({ durationMs: RECORDING_LIMITS.minMs, sizeBytes: null }).ok).toBe(true);
+    expect(checkRecording({ durationMs: RECORDING_LIMITS.maxMs, sizeBytes: 1 }).ok).toBe(true);
+  });
+
+  it('tolera o pequeno atraso do gravador ao parar no limite', () => {
+    expect(checkRecording({ durationMs: 3200, sizeBytes: 1 }).ok).toBe(true);
+    expect(checkRecording({ durationMs: 3600, sizeBytes: 1 })).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('3 segundos'),
+    });
+  });
+
+  it('rejeita toque acidental, duração inválida, arquivo vazio ou grande demais', () => {
+    expect(checkRecording({ durationMs: 120, sizeBytes: 100 }).ok).toBe(false);
+    expect(checkRecording({ durationMs: Number.NaN, sizeBytes: 100 }).ok).toBe(false);
+    expect(checkRecording({ durationMs: 1000, sizeBytes: 0 }).ok).toBe(false);
+    expect(checkRecording({ durationMs: 1000, sizeBytes: RECORDING_LIMITS.maxBytes + 1 }).ok).toBe(
+      false,
+    );
+  });
+});
+
+describe('nomes e extensão das gravações', () => {
+  it('sugere o próximo "Gravação N" livre (sem diferenciar maiúsculas)', () => {
+    expect(nextRecordingName([])).toBe('Gravação 1');
+    expect(nextRecordingName([{ name: 'Gravação 1' }, { name: 'gravação 2 ' }])).toBe('Gravação 3');
+    expect(nextRecordingName([{ name: 'Gravação 2' }])).toBe('Gravação 1');
+  });
+
+  it('usa o nome digitado limpo, ou o sugerido se vazio, com limite de tamanho', () => {
+    expect(recordingName('  Grito   de  guerra ', 'Gravação 1')).toBe('Grito de guerra');
+    expect(recordingName('   ', 'Gravação 4')).toBe('Gravação 4');
+    expect(recordingName('x'.repeat(90), 'G')).toHaveLength(IMPORT_LIMITS.maxNameLength);
+  });
+
+  it('extrai a extensão da uri e cai em m4a quando desconhecida', () => {
+    expect(recordingExtension('file:///tmp/rec-1.M4A')).toBe('m4a');
+    expect(recordingExtension('file:///tmp/rec.wav?x=1')).toBe('wav');
+    expect(recordingExtension('file:///tmp/rec.3gp')).toBe('m4a');
+    expect(recordingExtension('file:///tmp/semextensao')).toBe('m4a');
   });
 });

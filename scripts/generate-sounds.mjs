@@ -57,6 +57,58 @@ const mix = (...parts) => {
   return out;
 };
 
+/** Sino metálico: parciais inarmônicos (como um sino de ringue) com decaimento longo. */
+function metalBell(freq, ms, { volume = 0.5, decay = 2.2 } = {}) {
+  const partials = [
+    [1, 1],
+    [2.76, 0.6],
+    [5.4, 0.35],
+    [8.93, 0.2],
+  ];
+  const n = Math.round((RATE * ms) / 1000);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = i / RATE;
+    let v = 0;
+    partials.forEach(([ratio, amp], k) => {
+      v += amp * Math.sin(2 * Math.PI * freq * ratio * t) * Math.exp(-decay * (1 + k * 0.8) * t);
+    });
+    const attack = Math.min(1, i / (RATE * 0.002));
+    out[i] = v * attack * volume;
+  }
+  return out;
+}
+
+/** Batida seca (madeira): ruído filtrado bem curto + corpo grave. */
+function knock(ms = 60) {
+  const n = Math.round((RATE * ms) / 1000);
+  const out = new Float32Array(n);
+  let last = 0;
+  let seed = 7;
+  const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < n; i++) {
+    const t = i / RATE;
+    last = last * 0.6 + (random() * 2 - 1) * 0.4;
+    const body = Math.sin(2 * Math.PI * 420 * t);
+    out[i] = (last * 0.7 + body * 0.6) * Math.exp(-70 * t) * 0.9;
+  }
+  return out;
+}
+
+/** Varredura de frequência (sirene). */
+function sweep(from, to, ms, volume = 0.4) {
+  const n = Math.round((RATE * ms) / 1000);
+  const out = new Float32Array(n);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const f = from + ((to - from) * i) / n;
+    phase += (2 * Math.PI * f) / RATE;
+    const edge = Math.min(1, i / (RATE * 0.01), (n - i) / (RATE * 0.01));
+    out[i] = Math.sin(phase) * volume * edge;
+  }
+  return out;
+}
+
 const sounds = {
   'beep.wav': tone(880, 150),
   'beep-high.wav': tone(1320, 180),
@@ -72,6 +124,37 @@ const sounds = {
     tone(659, 160),
     tone(784, 160),
     tone(1047, 600, { decay: 2, harmonics: [1, 0.3] }),
+  ),
+  // Ringue e luta
+  'ring-bell.wav': metalBell(950, 1600),
+  'ring-bell-3.wav': concat(
+    metalBell(950, 330, { decay: 3 }),
+    metalBell(950, 330, { decay: 3 }),
+    metalBell(950, 1400),
+  ),
+  'clapper.wav': concat(knock(), silence(90), knock()),
+  // Alertas
+  'tick.wav': tone(2000, 30, { volume: 0.5 }),
+  'start-321.wav': concat(
+    tone(880, 150),
+    silence(850),
+    tone(880, 150),
+    silence(850),
+    tone(880, 150),
+    silence(850),
+    tone(1320, 500),
+  ),
+  'alarm.wav': concat(
+    ...Array.from({ length: 3 }, () => [
+      tone(880, 160, { volume: 0.5 }),
+      tone(660, 160, { volume: 0.5 }),
+    ]).flat(),
+  ),
+  'siren.wav': concat(sweep(600, 1300, 450), sweep(1300, 600, 450)),
+  'buzzer.wav': tone(180, 800, { harmonics: [1, 0.6, 0.4, 0.3], wave: 'square', volume: 0.3 }),
+  'chime.wav': concat(
+    tone(1319, 160, { decay: 6, harmonics: [1, 0.3] }),
+    tone(1976, 600, { decay: 4, harmonics: [1, 0.3] }),
   ),
 };
 

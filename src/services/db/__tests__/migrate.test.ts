@@ -1,3 +1,4 @@
+import { BUILTIN_SOUNDS } from '@/domain/sounds';
 import { createTestDatabase } from '@/test/sqliteTestDatabase';
 
 import { assertMigrationsAreValid, getSchemaVersion, migrate } from '../migrate';
@@ -103,15 +104,34 @@ describe('seed', () => {
     expect(rows).toEqual([{ id: GLOBAL_SOUND_CONFIG_ID, countdown_from: null }]);
   });
 
-  it('registra os 10 sons embutidos e o "silencioso"', async () => {
+  it('registra todos os sons embutidos e o "silencioso"', async () => {
     const db = createTestDatabase();
     await migrate(db);
     await seed(db);
     await seed(db);
-    const rows = await db.getAllAsync<{ id: string; source: string }>('SELECT id, source FROM sounds');
-    expect(rows).toHaveLength(11);
+    const rows = await db.getAllAsync<{ id: string; source: string }>(
+      'SELECT id, source FROM sounds',
+    );
+    expect(rows).toHaveLength(BUILTIN_SOUNDS.length + 1);
     expect(rows.every((r) => r.source === 'builtin')).toBe(true);
-    expect(rows.map((r) => r.id)).toEqual(expect.arrayContaining(['silent', 'go', 'rest', 'beep']));
+    expect(rows.map((r) => r.id)).toEqual(
+      expect.arrayContaining(['silent', 'go', 'rest', 'beep', 'ring-bell', 'clapper']),
+    );
+  });
+
+  it('banco de versão anterior ganha os sons novos e mantém a ordem do catálogo', async () => {
+    const db = createTestDatabase();
+    await migrate(db);
+    // Simula um app antigo: só um som embutido, com ordem/nome desatualizados.
+    await db.runAsync(
+      "INSERT INTO sounds (id, name, source, uri, created_at) VALUES ('beep', 'Velho', 'builtin', 'builtin:beep', 99)",
+    );
+    await seed(db);
+    const rows = await db.getAllAsync<{ id: string; name: string }>(
+      "SELECT id, name FROM sounds WHERE id != 'silent' ORDER BY created_at",
+    );
+    expect(rows.map((r) => r.id)).toEqual(BUILTIN_SOUNDS.map((s) => s.id));
+    expect(rows.find((r) => r.id === 'beep')?.name).toBe('Bipe');
   });
 });
 
@@ -134,7 +154,9 @@ describe('migração 2', () => {
       "INSERT INTO workouts (id, name, created_at, updated_at) VALUES ('w1', 'Antigo', 0, 0)",
     );
     expect(await migrate(db)).toEqual([2, 3]);
-    const row = await db.getFirstAsync<{ name: string }>("SELECT name FROM workouts WHERE id = 'w1'");
+    const row = await db.getFirstAsync<{ name: string }>(
+      "SELECT name FROM workouts WHERE id = 'w1'",
+    );
     expect(row?.name).toBe('Antigo');
   });
 });

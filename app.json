@@ -41,8 +41,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
+          "microphonePermission": "O DMTabata usa o microfone para gravar sons curtos (até 3 segundos) para os alertas dos treinos.",
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": false
         }
       ],
@@ -59,7 +59,16 @@
             "./assets/sounds/bell.wav",
             "./assets/sounds/gong.wav",
             "./assets/sounds/horn.wav",
-            "./assets/sounds/finish.wav"
+            "./assets/sounds/finish.wav",
+            "./assets/sounds/ring-bell.wav",
+            "./assets/sounds/ring-bell-3.wav",
+            "./assets/sounds/clapper.wav",
+            "./assets/sounds/tick.wav",
+            "./assets/sounds/start-321.wav",
+            "./assets/sounds/alarm.wav",
+            "./assets/sounds/siren.wav",
+            "./assets/sounds/buzzer.wav",
+            "./assets/sounds/chime.wav"
           ]
         }
       ]

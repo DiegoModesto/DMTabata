@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Spacing } from '@/constants/theme';
 import { SILENT_SOUND_ID } from '@/domain/alerts';
-import { SILENT_SOUND_NAME, type SoundEntry } from '@/domain/sounds';
+import { groupSounds, SILENT_SOUND_NAME, type SoundEntry } from '@/domain/sounds';
 import { useTheme } from '@/hooks/use-theme';
 import { useServices } from '@/providers/services-provider';
 
-type Option = { id: string | null; name: string; playable: boolean; group?: string };
+type Option = { id: string | null; name: string; playable: boolean };
+type Section = { label: string | null; options: Option[] };
 
 type Props = {
   visible: boolean;
@@ -36,16 +37,48 @@ export function SoundPickerModal({
 }: Props) {
   const theme = useTheme();
   const { alertPlayer } = useServices();
-  const options: Option[] = [
-    ...(inheritLabel ? [{ id: null, name: inheritLabel, playable: false }] : []),
-    { id: SILENT_SOUND_ID, name: SILENT_SOUND_NAME, playable: false },
-    ...library.map((s) => ({
-      id: s.id,
-      name: s.name,
-      playable: true,
-      group: s.source === 'user' ? 'Meus sons' : undefined,
+  const sections: Section[] = [
+    {
+      label: null,
+      options: [
+        ...(inheritLabel ? [{ id: null, name: inheritLabel, playable: false }] : []),
+        { id: SILENT_SOUND_ID, name: SILENT_SOUND_NAME, playable: false },
+      ],
+    },
+    ...groupSounds(library.filter((s) => s.id !== SILENT_SOUND_ID)).map((group) => ({
+      label: group.label,
+      options: group.sounds.map((s) => ({ id: s.id, name: s.name, playable: true })),
     })),
   ];
+
+  const renderOption = (item: Option) => {
+    const isSelected = item.id === selected;
+    return (
+      <View key={item.id ?? 'inherit'} style={styles.row}>
+        <Pressable
+          style={styles.option}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: isSelected }}
+          accessibilityLabel={item.name}
+          onPress={() => {
+            onSelect(item.id);
+            onClose();
+          }}>
+          <ThemedText style={isSelected ? { color: theme.primary } : undefined}>
+            {isSelected ? '● ' : '○ '}
+            {item.name}
+          </ThemedText>
+        </Pressable>
+        {item.playable && item.id ? (
+          <IconButton
+            glyph="▶"
+            label={`Ouvir ${item.name}`}
+            onPress={() => alertPlayer.preview(item.id!)}
+          />
+        ) : null}
+      </View>
+    );
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -55,35 +88,20 @@ export function SoundPickerModal({
             {title}
           </ThemedText>
           <ScrollView>
-            {options.map((item) => {
-              const isSelected = item.id === selected;
-              return (
-                <View key={item.id ?? 'inherit'} style={styles.row}>
-                  <Pressable
-                    style={styles.option}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: isSelected }}
-                    accessibilityLabel={item.name}
-                    onPress={() => {
-                      onSelect(item.id);
-                      onClose();
-                    }}>
-                    <ThemedText style={isSelected ? { color: theme.primary } : undefined}>
-                      {isSelected ? '● ' : '○ '}
-                      {item.name}
-                      {item.group ? ` · ${item.group}` : ''}
-                    </ThemedText>
-                  </Pressable>
-                  {item.playable && item.id ? (
-                    <IconButton
-                      glyph="▶"
-                      label={`Ouvir ${item.name}`}
-                      onPress={() => alertPlayer.preview(item.id!)}
-                    />
-                  ) : null}
-                </View>
-              );
-            })}
+            {sections.map((section) => (
+              <View key={section.label ?? 'base'} style={styles.section}>
+                {section.label ? (
+                  <ThemedText
+                    type="smallBold"
+                    themeColor="textSecondary"
+                    accessibilityRole="header"
+                    style={styles.sectionTitle}>
+                    {section.label.toUpperCase()}
+                  </ThemedText>
+                ) : null}
+                {section.options.map(renderOption)}
+              </View>
+            ))}
           </ScrollView>
           <Button title="Fechar" variant="secondary" onPress={onClose} />
         </ThemedView>
@@ -105,4 +123,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 18 },
   row: { flexDirection: 'row', alignItems: 'center' },
   option: { flex: 1, minHeight: 44, justifyContent: 'center' },
+  section: { marginBottom: Spacing.two },
+  sectionTitle: { marginTop: Spacing.two, letterSpacing: 1 },
 });
