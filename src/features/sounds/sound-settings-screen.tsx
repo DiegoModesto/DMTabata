@@ -80,6 +80,7 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
   const [loaded, setLoaded] = useState(false);
   const [picking, setPicking] = useState<AlertSlot | null>(null);
   const [pickingSurprise, setPickingSurprise] = useState(false);
+  const [pickingMusic, setPickingMusic] = useState(false);
   const [recording, setRecording] = useState(false);
 
   const [version, setVersion] = useState(0);
@@ -222,6 +223,43 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
       </Card>
 
       <Card>
+        <ThemedText type="smallBold">Música de fundo</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Toca em loop durante o treino, abaixo dos alertas e dos sons surpresa. Pausa e para junto
+          com o treino.
+        </ThemedText>
+        <SoundRow
+          label="Música"
+          value={
+            settings.backgroundMusicId ? soundName(settings.backgroundMusicId, library) : 'Nenhuma'
+          }
+          inherited={!config || config.backgroundMusicId === null}
+          onPress={() => (editable ? setPickingMusic(true) : undefined)}
+          playing={preview.isPlaying('music')}
+          onPreview={
+            settings.backgroundMusicId
+              ? () =>
+                  preview.toggle(
+                    'music',
+                    settings.backgroundMusicId!,
+                    settings.volume * settings.musicVolume,
+                  )
+              : undefined
+          }
+        />
+        <Stepper
+          label="Volume da música"
+          format="count"
+          suffix="%"
+          step={5}
+          min={5}
+          max={100}
+          value={Math.round(settings.musicVolume * 100)}
+          onChange={(v) => editable && update({ musicVolume: v / 100 })}
+        />
+      </Card>
+
+      <Card>
         <ThemedText type="smallBold">Sons surpresa</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           Durante o trabalho, em momentos sorteados, toca um destes sons. Um novo interrompe o
@@ -340,6 +378,16 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
           reload();
           Alert.alert('Som gravado', `"${sound.name}" já pode ser usado nos treinos.`);
         }}
+      />
+
+      <SoundPickerModal
+        visible={pickingMusic}
+        title="Música de fundo"
+        library={library}
+        selected={config ? config.backgroundMusicId : null}
+        inheritLabel={`Padrão (${base.backgroundMusicId ? soundName(base.backgroundMusicId, library) : 'Nenhuma'})`}
+        onSelect={(id) => update({ backgroundMusicId: id })}
+        onClose={() => setPickingMusic(false)}
       />
 
       <SoundPickerModal

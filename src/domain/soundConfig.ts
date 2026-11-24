@@ -28,6 +28,9 @@ export type SoundConfig = {
   /** `null` herda; `[]` desliga explicitamente. */
   surpriseSounds: SoundId[] | null;
   surpriseChance: number | null;
+  /** `null` herda; `SILENT_SOUND_ID` = sem música. */
+  backgroundMusicId: SoundId | null;
+  musicVolume: number | null;
 };
 
 export const COUNTDOWN_MAX = 10;
@@ -50,6 +53,8 @@ export function emptySoundConfig(id: string, name: string): SoundConfig {
     duckMusic: null,
     surpriseSounds: null,
     surpriseChance: null,
+    backgroundMusicId: null,
+    musicVolume: null,
   };
 }
 
@@ -84,6 +89,13 @@ export function applySoundConfig(
     duckMusic: pick(layer.duckMusic, base.duckMusic),
     surpriseSounds: cleanSurprisePool(pick(layer.surpriseSounds, base.surpriseSounds)),
     surpriseChance: Math.min(1, Math.max(0, pick(layer.surpriseChance, base.surpriseChance))),
+    backgroundMusicId:
+      layer.backgroundMusicId === null || layer.backgroundMusicId === undefined
+        ? base.backgroundMusicId
+        : layer.backgroundMusicId === SILENT_SOUND_ID
+          ? null
+          : layer.backgroundMusicId,
+    musicVolume: Math.min(1, Math.max(0, pick(layer.musicVolume, base.musicVolume))),
   };
 }
 
@@ -97,6 +109,7 @@ export function soundsInUse(settings: AlertSettings, extra: (SoundId | null)[] =
   const ids = [
     ...ALERT_SLOTS.map((slot) => settings.sounds[slot]),
     ...settings.surpriseSounds,
+    settings.backgroundMusicId,
     ...extra,
   ];
   return [...new Set(ids.filter((id): id is SoundId => !!id && id !== SILENT_SOUND_ID))];

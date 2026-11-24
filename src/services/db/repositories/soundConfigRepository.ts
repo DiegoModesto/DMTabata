@@ -23,6 +23,8 @@ type ConfigRow = {
   duck_music: number | null;
   surprise_sound_ids: string | null;
   surprise_chance: number | null;
+  background_music_id: string | null;
+  music_volume: number | null;
 };
 
 const SLOT_COLUMNS: Record<AlertSlot, keyof ConfigRow> = {
@@ -65,6 +67,8 @@ function toConfig(row: ConfigRow): SoundConfig {
     duckMusic: toBool(row.duck_music),
     surpriseSounds: parseIds(row.surprise_sound_ids),
     surpriseChance: row.surprise_chance,
+    backgroundMusicId: row.background_music_id,
+    musicVolume: row.music_volume,
   };
 }
 
@@ -82,8 +86,9 @@ export function createSoundConfigRepository(db: SqlDatabase) {
         `INSERT INTO sound_configs (id, name, work_start_sound_id, rest_start_sound_id,
            countdown_sound_id, cycle_end_sound_id, workout_end_sound_id, halfway_sound_id,
            countdown_from, volume, voice_enabled, voice_lang, announce_next, haptics_enabled,
-           halfway_alert, duck_music, prepare_start_sound_id, surprise_sound_ids, surprise_chance)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           halfway_alert, duck_music, prepare_start_sound_id, surprise_sound_ids, surprise_chance,
+           background_music_id, music_volume)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            work_start_sound_id = excluded.work_start_sound_id,
@@ -102,7 +107,9 @@ export function createSoundConfigRepository(db: SqlDatabase) {
            duck_music = excluded.duck_music,
            prepare_start_sound_id = excluded.prepare_start_sound_id,
            surprise_sound_ids = excluded.surprise_sound_ids,
-           surprise_chance = excluded.surprise_chance`,
+           surprise_chance = excluded.surprise_chance,
+           background_music_id = excluded.background_music_id,
+           music_volume = excluded.music_volume`,
         [
           config.id,
           config.name,
@@ -123,6 +130,8 @@ export function createSoundConfigRepository(db: SqlDatabase) {
           config.sounds.prepareStart,
           config.surpriseSounds === null ? null : JSON.stringify(config.surpriseSounds),
           config.surpriseChance,
+          config.backgroundMusicId,
+          config.musicVolume,
         ],
       );
     },

@@ -284,6 +284,29 @@ describe('SoundSettingsScreen — pré-escuta com play/pause', () => {
   });
 });
 
+describe('SoundSettingsScreen — música de fundo', () => {
+  it('escolhe a música, ouve e ajusta o volume', async () => {
+    const { services, alertPlayer } = await setup();
+    const vibes = await services.sounds.addUserSound({ name: 'Vibes', uri: 'file:///v.mp3' });
+    await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Música: Nenhuma (padrão)' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Vibes' }));
+    expect(screen.getByRole('button', { name: 'Música: Vibes' })).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Música' }));
+    expect(alertPlayer.previewed).toContain(vibes.id);
+    expect(screen.getByRole('button', { name: 'Parar Música' })).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Diminuir Volume da música' }));
+    await waitFor(async () =>
+      expect(await services.soundService.settingsForWorkout(planExampleWorkout())).toMatchObject({
+        backgroundMusicId: vibes.id,
+        musicVolume: 0.3,
+      }),
+    );
+  });
+});
+
 describe('SoundSettingsScreen — seletor por categoria', () => {
   it('mostra os sons agrupados (ringue, alertas) e permite escolher o sino de ringue', async () => {
     const { services } = await setup();

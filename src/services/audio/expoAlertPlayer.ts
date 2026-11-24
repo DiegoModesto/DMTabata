@@ -50,6 +50,7 @@ export function createExpoAlertPlayer(): AlertPlayer {
   let currentSurprise: AudioPlayer | null = null;
 
   function stopSurprise() {
+    setMusicDucked(false);
     if (!currentSurprise) return;
     const player = currentSurprise;
     currentSurprise = null;
@@ -71,6 +72,40 @@ export function createExpoAlertPlayer(): AlertPlayer {
       });
     } catch {
       currentMode = null;
+    }
+  }
+
+  // ---------- Música de fundo (loop, abaixo dos alertas) ----------
+  /** Quanto a música abaixa enquanto um som surpresa toca. */
+  const MUSIC_DUCK = 0.4;
+  let music: { player: AudioPlayer; volume: number } | null = null;
+
+  function setMusicDucked(ducked: boolean) {
+    if (!music) return;
+    music.player.volume = ducked ? music.volume * MUSIC_DUCK : music.volume;
+  }
+
+  function startMusic(soundId: SoundId, volume: number) {
+    stopMusic();
+    const source = resolveSource(soundId);
+    if (source === null) return;
+    // Player próprio: não compartilha com a pré-escuta nem com os alertas.
+    const player = createAudioPlayer(source);
+    player.loop = true;
+    player.volume = volume;
+    player.play();
+    music = { player, volume };
+  }
+
+  function stopMusic() {
+    if (!music) return;
+    const { player } = music;
+    music = null;
+    try {
+      player.pause();
+      player.remove();
+    } catch {
+      // já liberado
     }
   }
 
@@ -119,10 +154,28 @@ export function createExpoAlertPlayer(): AlertPlayer {
         if (command.type === 'sound') {
           if (command.channel === 'surprise') {
             stopSurprise();
-            currentSurprise = play(command.soundId, command.volume);
+            const player = play(command.soundId, command.volume);
+            currentSurprise = player;
+            if (player) {
+              // A música fica por baixo enquanto a surpresa toca.
+              setMusicDucked(true);
+              const sub = player.addListener('playbackStatusUpdate', (status) => {
+                if (!status.didJustFinish) return;
+                sub.remove();
+                if (currentSurprise === player) {
+                  currentSurprise = null;
+                  setMusicDucked(false);
+                }
+              });
+            }
           } else play(command.soundId, command.volume);
         } else if (command.type === 'stopChannel') stopSurprise();
-        else if (command.type === 'haptic') playHaptic(command.style);
+        else if (command.type === 'music') {
+          if (command.action === 'start') startMusic(command.soundId, command.volume);
+          else if (command.action === 'pause') music?.player.pause();
+          else if (command.action === 'resume') music?.player.play();
+          else stopMusic();
+        } else if (command.type === 'haptic') playHaptic(command.style);
         else
           Speech.speak(command.text, { language: command.lang, useApplicationAudioSession: true });
       }
@@ -147,6 +200,7 @@ export function createExpoAlertPlayer(): AlertPlayer {
     stopPreview,
     release() {
       stopPreview();
+      stopMusic();
       currentSurprise = null;
       void Speech.stop();
       players.forEach((p) => p.remove());

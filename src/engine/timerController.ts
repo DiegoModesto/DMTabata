@@ -44,6 +44,30 @@ export function createTimerController(
   let surprises: Surprise[] = planSurprises(timeline, settings, random);
 
   const stopSurprise: AlertCommand = { type: 'stopChannel', channel: 'surprise' };
+  const stopMusic: AlertCommand = { type: 'music', action: 'stop' };
+
+  /** Comando de música de fundo para uma ação do usuário, se houver música. */
+  function musicCommand(action: TimerAction): AlertCommand | null {
+    const id = alertSettings.backgroundMusicId;
+    if (!id) return null;
+    switch (action) {
+      case 'start':
+        if (alertSettings.volume <= 0 || alertSettings.musicVolume <= 0) return null;
+        return {
+          type: 'music',
+          action: 'start',
+          soundId: id,
+          volume: alertSettings.volume * alertSettings.musicVolume,
+        };
+      case 'pause':
+      case 'resume':
+        return { type: 'music', action };
+      case 'stop':
+        return stopMusic;
+      default:
+        return null;
+    }
+  }
 
   function surpriseCommands(prev: TimerSnapshot | null, next: TimerSnapshot): AlertCommand[] {
     if (alertSettings.volume <= 0) return [];
@@ -62,8 +86,11 @@ export function createTimerController(
     recorder.observe(next, now);
     const events = diffEvents(last, next, alertSettings, state.stoppedEarly);
     const commands = [...surpriseCommands(last, next), ...alertsForEvents(events, alertSettings)];
-    // Ao terminar, a trilha surpresa para antes do som de fim.
-    if (events.some((e) => e.type === 'finished')) commands.unshift(stopSurprise);
+    // Ao terminar, a trilha surpresa e a música param antes do som de fim.
+    if (events.some((e) => e.type === 'finished')) {
+      commands.unshift(stopSurprise);
+      if (alertSettings.backgroundMusicId) commands.unshift(stopMusic);
+    }
     last = next;
     return { snapshot: next, events, commands };
   }
@@ -117,6 +144,11 @@ export function createTimerController(
       // Pausar ou parar silencia a trilha surpresa que estiver tocando.
       if ((action === 'pause' || action === 'stop') && !result.commands.includes(stopSurprise)) {
         result.commands.unshift(stopSurprise);
+      }
+      const music = musicCommand(action);
+      if (music && !result.commands.includes(stopMusic)) {
+        // A música começa antes do som da preparação; nas demais ações vem primeiro também.
+        result.commands.unshift(music);
       }
       return result;
     },

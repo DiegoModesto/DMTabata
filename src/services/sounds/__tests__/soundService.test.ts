@@ -208,3 +208,18 @@ describe('soundService — sons surpresa', () => {
     expect((await soundService.settingsForWorkout(workout)).surpriseSounds).toEqual([b.id, 'gong']);
   });
 });
+
+describe('soundService — música de fundo', () => {
+  it('música removida da biblioteca deixa de tocar', async () => {
+    const { soundService, sounds, workout } = await setup();
+    const vibes = await sounds.addUserSound({ name: 'Vibes', uri: 'file:///v.mp3' });
+    const global = await soundService.globalConfig();
+    await soundService.saveConfig({ ...global, backgroundMusicId: vibes.id, musicVolume: 0.3 });
+    expect(await soundService.settingsForWorkout(workout)).toMatchObject({
+      backgroundMusicId: vibes.id,
+      musicVolume: 0.3,
+    });
+    await soundService.removeSound(vibes.id);
+    expect((await soundService.settingsForWorkout(workout)).backgroundMusicId).toBeNull();
+  });
+});
