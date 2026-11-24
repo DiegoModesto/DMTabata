@@ -3,6 +3,8 @@ import { createWorkoutsStore } from '@/stores/workoutsStore';
 
 import { createSilentAlertPlayer, type AlertPlayer } from './audio/alertPlayer';
 import type { SoundImporter } from './audio/soundImporter';
+import type { BackupIO } from './backup/backupIO';
+import { createBackupService } from './backup/backupService';
 import { createMockAuthService } from './auth/mockAuthService';
 import type { SqlDatabase } from './db/database';
 import { createSessionRepository } from './db/repositories/sessionRepository';
@@ -11,12 +13,15 @@ import { createSoundConfigRepository } from './db/repositories/soundConfigReposi
 import { createSoundRepository } from './db/repositories/soundRepository';
 import { createUserRepository } from './db/repositories/userRepository';
 import { createWorkoutRepository } from './db/repositories/workoutRepository';
+import { createNoopPhaseNotifier, type PhaseNotifier } from './notifications/phaseNotifier';
 import { createSessionService } from './sessions/sessionService';
 import { createSoundService } from './sounds/soundService';
 
 export type ServiceOverrides = {
   alertPlayer?: AlertPlayer;
   soundImporter?: SoundImporter;
+  phaseNotifier?: PhaseNotifier;
+  backupIO?: BackupIO;
   /** Relógio monotônico em ms (para o temporizador). */
   clock?: () => number;
   /** Data/hora atual (epoch ms) para registros e estatísticas. */
@@ -29,6 +34,13 @@ const unavailableImporter: SoundImporter = {
     throw new Error('Importação de sons indisponível.');
   },
   remove: async () => {},
+};
+
+const unavailableBackupIO: BackupIO = {
+  share: async () => {
+    throw new Error('Exportação indisponível.');
+  },
+  pickText: async () => null,
 };
 
 const defaultClock = () =>
@@ -63,6 +75,14 @@ export function createServices(db: SqlDatabase, overrides: ServiceOverrides = {}
     getUserId: () => authStore.getState().user?.id ?? null,
   });
 
+  const backupService = createBackupService({
+    workouts,
+    sounds,
+    io: overrides.backupIO ?? unavailableBackupIO,
+    getUserId: () => authStore.getState().user?.id ?? null,
+    now: overrides.now,
+  });
+
   return {
     db,
     settings,
@@ -75,6 +95,8 @@ export function createServices(db: SqlDatabase, overrides: ServiceOverrides = {}
     soundConfigs,
     sessions,
     sessionService,
+    backupService,
+    phaseNotifier: overrides.phaseNotifier ?? createNoopPhaseNotifier(),
     soundService,
     alertPlayer,
     clock: overrides.clock ?? defaultClock,

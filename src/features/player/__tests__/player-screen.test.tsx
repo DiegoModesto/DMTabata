@@ -1,5 +1,8 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
+
+import { createFromTemplate } from '@/domain/templates';
+import { createNoopPhaseNotifier } from '@/services/notifications/phaseNotifier';
 
 import { createSilentAlertPlayer } from '@/services/audio/alertPlayer';
 import { mockRouter, resetRouterMock } from '@/test/expoRouterMock';
@@ -38,7 +41,8 @@ describe('PlayerScreen — temporizador com sons', () => {
     jest.useFakeTimers();
     now = 0;
     const alertPlayer = createSilentAlertPlayer();
-    const services = await createTestServices({ alertPlayer, clock });
+    const notifier = createNoopPhaseNotifier();
+    const services = await createTestServices({ alertPlayer, clock, phaseNotifier: notifier });
     const workout = planExampleWorkout();
     await services.workouts.save(workout, null);
     await customize?.(services, workout);
@@ -48,7 +52,7 @@ describe('PlayerScreen — temporizador com sons', () => {
       alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.slot : ''));
     const soundIds = () =>
       alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.soundId : ''));
-    return { alertPlayer, sounds, soundIds, services, workout };
+    return { alertPlayer, sounds, soundIds, services, workout, notifier };
   }
 
   beforeEach(resetRouterMock);
@@ -194,5 +198,73 @@ describe('PlayerScreen — temporizador com sons', () => {
     });
     expect(screen.getByText('Treino interrompido')).toBeTruthy();
     alert.mockRestore();
+  });
+
+  describe('segundo plano', () => {
+    let listeners: ((state: string) => void)[] = [];
+    beforeEach(() => {
+      listeners = [];
+      jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+        listeners.push(listener as (state: string) => void);
+        return { remove: () => {} } as ReturnType<typeof AppState.addEventListener>;
+      });
+    });
+    afterEach(() => jest.restoreAllMocks());
+    const emit = async (state: string) =>
+      act(async () => {
+        listeners.forEach((l) => l(state));
+      });
+
+    it('ao sair do app agenda as próximas trocas de fase; ao voltar, cancela', async () => {
+      const { notifier, alertPlayer } = await setup();
+      expect(notifier.permissionRequests).toBe(1);
+      await advance(5_000);
+      await emit('background');
+      expect(notifier.scheduled).toHaveLength(10);
+      expect(notifier.scheduled[0]).toMatchObject({ title: 'Trabalho', body: 'Polichinelo (30s)' });
+
+      // Em segundo plano o player não toca (as notificações cuidam disso).
+      const before = alertPlayer.executed.length;
+      await advance(6_000);
+      expect(alertPlayer.executed.length).toBe(before);
+
+      await emit('active');
+      expect(notifier.scheduled).toEqual([]);
+      expect(screen.getByText('TRABALHO')).toBeTruthy();
+    });
+
+    it('pausado não agenda notificações', async () => {
+      const { notifier } = await setup();
+      await fireEvent.press(screen.getByRole('button', { name: '⏸ Pausar' }));
+      await emit('background');
+      expect(notifier.scheduled).toEqual([]);
+    });
+  });
+
+  it('bloquear esconde os controles; segurar desbloqueia', async () => {
+    await setup();
+    await fireEvent.press(screen.getByRole('button', { name: 'Bloquear controles' }));
+    expect(screen.queryByRole('button', { name: '⏸ Pausar' })).toBeNull();
+    await fireEvent(screen.getByRole('button', { name: 'Desbloquear controles' }), 'longPress');
+    expect(screen.getByRole('button', { name: '⏸ Pausar' })).toBeTruthy();
+  });
+
+  it('AMRAP: conta rounds e grava na sessão', async () => {
+    jest.useFakeTimers();
+    now = 0;
+    const services = await createTestServices({ alertPlayer: createSilentAlertPlayer(), clock });
+    const amrap = createFromTemplate('amrap');
+    await services.workouts.save(amrap, null);
+    await renderWithServices(<PlayerScreen workoutId={amrap.id} />, services);
+    await screen.findByText('PREPARAR');
+    for (let i = 0; i < 3; i++) {
+      await fireEvent.press(screen.getByRole('button', { name: 'Adicionar um round' }));
+    }
+    await fireEvent.press(screen.getByRole('button', { name: 'Remover um round' }));
+    expect(screen.getByLabelText('2 rounds')).toBeTruthy();
+    await advance(10_000 + 12 * 60_000);
+    await screen.findByRole('button', { name: 'Avaliar treino' });
+    const [session] = await services.sessions.list({ workoutId: amrap.id });
+    expect(session.roundsDone).toBe(2);
   });
 });

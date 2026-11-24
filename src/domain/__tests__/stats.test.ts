@@ -31,6 +31,7 @@ function session(overrides: Partial<SessionRecord> = {}): SessionRecord {
     phasesCompleted: 10,
     phasesSkipped: 0,
     phasesTotal: 10,
+    roundsDone: null,
     feedback: null,
     ...overrides,
   };

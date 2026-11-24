@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useNavigation, usePreventRemove, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
 
@@ -13,8 +13,8 @@ import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { formatDuration } from '@/domain/format';
 import { validateWorkout } from '@/domain/validation';
+import { createFromTemplate } from '@/domain/templates';
 import {
-  createWorkout,
   cycleDurationSec,
   effectiveRestSec,
   effectiveWorkSec,
@@ -24,6 +24,7 @@ import {
   workoutTotals,
   type Cycle,
   type Workout,
+  type WorkoutType,
 } from '@/domain/workout';
 import { editorReducer, type EditorAction } from '@/domain/workoutEditor';
 import { useTheme } from '@/hooks/use-theme';
@@ -180,18 +181,23 @@ function CycleCard({
   );
 }
 
-type Props = { workoutId?: string };
+type Props = { workoutId?: string; template?: WorkoutType };
 
-export function WorkoutEditorScreen({ workoutId }: Props) {
+export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
   const router = useRouter();
+  const navigation = useNavigation();
   const { workouts, workoutsStore } = useServices();
-  const [draft, setDraft] = useState<Workout | null>(() =>
-    workoutId ? null : createWorkout({ name: '' }),
+  const [initial] = useState<Workout | null>(() =>
+    workoutId ? null : createFromTemplate(template),
+  );
+  const [draft, setDraft] = useState<Workout | null>(initial);
+  const [originalJson, setOriginalJson] = useState<string | null>(
+    initial ? JSON.stringify(initial) : null,
   );
   const [editing, setEditing] = useState<{ cycleId: string; itemId: string } | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const original = useRef<string | null>(null);
+  const allowLeave = useRef(false);
 
   useEffect(() => {
     if (!workoutId) return;
@@ -199,9 +205,10 @@ export function WorkoutEditorScreen({ workoutId }: Props) {
     workouts.getById(workoutId).then((w) => {
       if (!active) return;
       if (w) {
-        original.current = JSON.stringify(w);
+        setOriginalJson(JSON.stringify(w));
         setDraft(w);
       } else {
+        allowLeave.current = true;
         router.back();
       }
     });
@@ -210,9 +217,26 @@ export function WorkoutEditorScreen({ workoutId }: Props) {
     };
   }, [workoutId, workouts, router]);
 
-  useEffect(() => {
-    if (draft && original.current === null && !workoutId) original.current = JSON.stringify(draft);
-  }, [draft, workoutId]);
+  const dirty = useMemo(
+    () => draft !== null && originalJson !== null && JSON.stringify(draft) !== originalJson,
+    [draft, originalJson],
+  );
+
+  // Qualquer saída (botão, gesto, voltar do Android) com alterações pede confirmação.
+  usePreventRemove(dirty, ({ data }) => {
+    if (allowLeave.current) {
+      navigation.dispatch(data.action);
+      return;
+    }
+    Alert.alert('Descartar alterações?', 'As mudanças não salvas serão perdidas.', [
+      { text: 'Continuar editando', style: 'cancel' },
+      {
+        text: 'Descartar',
+        style: 'destructive',
+        onPress: () => navigation.dispatch(data.action),
+      },
+    ]);
+  });
 
   const dispatch = (action: EditorAction) => {
     setDraft((current) => (current ? editorReducer(current, action) : current));
@@ -237,7 +261,9 @@ export function WorkoutEditorScreen({ workoutId }: Props) {
     setSaving(true);
     try {
       const saved = await workoutsStore.getState().save(draft);
-      original.current = JSON.stringify(saved);
+      allowLeave.current = true;
+      setDraft(saved);
+      setOriginalJson(JSON.stringify(saved));
       if (workoutId) router.back();
       else router.replace(`/workout/${saved.id}`);
     } finally {
@@ -245,14 +271,7 @@ export function WorkoutEditorScreen({ workoutId }: Props) {
     }
   };
 
-  const cancel = () => {
-    const dirty = original.current !== JSON.stringify(draft);
-    if (!dirty) return router.back();
-    Alert.alert('Descartar alterações?', 'As mudanças não salvas serão perdidas.', [
-      { text: 'Continuar editando', style: 'cancel' },
-      { text: 'Descartar', style: 'destructive', onPress: () => router.back() },
-    ]);
-  };
+  const cancel = () => router.back();
 
   return (
     <Screen

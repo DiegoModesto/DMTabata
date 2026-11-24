@@ -25,4 +25,21 @@ export const Stack = Object.assign(() => null, { Screen: () => null, Protected: 
 
 export function resetRouterMock() {
   Object.values(mockRouter).forEach((fn) => fn.mockReset());
+  mockNavigation.dispatch.mockReset();
+}
+
+export const mockNavigation = { dispatch: jest.fn() };
+export const useNavigation = () => mockNavigation;
+
+/** Guarda o último callback registrado para o teste simular uma tentativa de saída. */
+export const preventRemoveState = {
+  prevent: false,
+  callback: null as null | ((e: { data: { action: unknown } }) => void),
+};
+export function usePreventRemove(
+  prevent: boolean,
+  callback: (e: { data: { action: unknown } }) => void,
+) {
+  preventRemoveState.prevent = prevent;
+  preventRemoveState.callback = callback;
 }

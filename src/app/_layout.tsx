@@ -6,6 +6,8 @@ import { useColorScheme } from 'react-native';
 import { ServicesProvider, useAuth } from '@/providers/services-provider';
 import { createExpoAlertPlayer } from '@/services/audio/expoAlertPlayer';
 import { createExpoSoundImporter } from '@/services/audio/expoSoundImporter';
+import { createExpoBackupIO } from '@/services/backup/expoBackupIO';
+import { createExpoPhaseNotifier } from '@/services/notifications/expoPhaseNotifier';
 import type { ServiceOverrides } from '@/services/container';
 import { openAppDatabase } from '@/services/db/expoDatabase';
 
@@ -14,6 +16,8 @@ SplashScreen.preventAutoHideAsync();
 const createOverrides = (): ServiceOverrides => ({
   alertPlayer: createExpoAlertPlayer(),
   soundImporter: createExpoSoundImporter(),
+  phaseNotifier: createExpoPhaseNotifier(),
+  backupIO: createExpoBackupIO(),
 });
 
 function RootNavigator() {
@@ -31,6 +35,7 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="workout/templates" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout/[id]/index" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="workout/[id]/edit" options={{ presentation: 'modal' }} />

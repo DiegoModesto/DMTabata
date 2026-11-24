@@ -155,4 +155,9 @@ export const migrations: Migration[] = [
         REFERENCES sounds(id) ON DELETE SET NULL;
     `,
   },
+  {
+    version: 3,
+    name: 'rounds do AMRAP na sessão',
+    sql: `ALTER TABLE sessions ADD COLUMN rounds_done INTEGER;`,
+  },
 ];

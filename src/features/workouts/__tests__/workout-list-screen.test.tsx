@@ -24,7 +24,7 @@ describe('WorkoutListScreen', () => {
     await setup();
     expect(await screen.findByText('Crie seu primeiro treino')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Criar treino' }));
-    expect(mockRouter.push).toHaveBeenCalledWith('/workout/new');
+    expect(mockRouter.push).toHaveBeenCalledWith('/workout/templates');
   });
 
   it('"Usar Tabata clássico" cria o treino e abre o detalhe', async () => {

@@ -133,7 +133,7 @@ describe('migração 2', () => {
     await db.runAsync(
       "INSERT INTO workouts (id, name, created_at, updated_at) VALUES ('w1', 'Antigo', 0, 0)",
     );
-    expect(await migrate(db)).toEqual([2]);
+    expect(await migrate(db)).toEqual([2, 3]);
     const row = await db.getFirstAsync<{ name: string }>("SELECT name FROM workouts WHERE id = 'w1'");
     expect(row?.name).toBe('Antigo');
   });

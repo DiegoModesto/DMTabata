@@ -282,15 +282,18 @@ Eventos emitidos para o Alert Service: `PHASE_STARTED`, `COUNTDOWN_TICK(n)`, `HA
 ### 5.4 Background e tela bloqueada
 Este é o ponto de maior risco técnico, principalmente no iOS.
 
+**Implementado (Fase 4):**
+
 | Cenário | Estratégia |
 |---------|-----------|
-| App em primeiro plano | Áudio/voz/haptics em tempo real pelo engine; `keep-awake` ativo |
-| App em background / tela bloqueada | Ao iniciar (e a cada pause/resume/skip), **agendar notificações locais** para cada transição de fase, com som curto customizado. Cancelar e reagendar ao alterar. |
-| Áudio contínuo em background (opcional, recomendado) | Ativar `UIBackgroundModes: audio` e manter sessão de áudio ativa (tocando silêncio entre bipes) para que bipes e voz saiam no horário mesmo bloqueado. Exige justificativa na revisão da App Store — aceitável para app de treino com guia por áudio. |
-| Android | Foreground Service com notificação persistente mostrando fase/tempo (via módulo nativo ou `expo-task-manager`) |
-| Limite iOS de 64 notificações pendentes | Agendar em janelas (próximas ~60 transições) e reagendar ao avançar |
+| App em primeiro plano | Áudio/voz/haptics em tempo real pelo motor; `keep-awake` ativo |
+| App vai para segundo plano / tela bloqueada | Agenda **notificações locais** (expo-notifications) para cada troca de fase restante + fim, com o som configurado (sons embutidos empacotados no app). Até 60 por vez (limite do iOS: 64), sempre reservando o aviso de fim. Pausado não agenda nada. |
+| Durante o segundo plano | O player **não** toca alertas (evita som duplicado com a notificação). |
+| Volta ao app | Cancela as notificações; o motor recalcula o estado pelo relógio — nenhum segundo é perdido. |
 
-Extras para v1.1: **Live Activity** (iOS) e notificação com cronômetro (Android) mostrando o tempo na tela de bloqueio.
+Sons importados pelo usuário usam o som padrão do sistema na notificação (o iOS só toca sons empacotados).
+
+**Futuro (v1.1+):** Live Activity (iOS) e foreground service com cronômetro na notificação (Android); avaliar áudio contínuo em background (`UIBackgroundModes: audio`) se as notificações não forem precisas o bastante em testes de campo.
 
 ---
 
@@ -486,31 +489,31 @@ Nota 1–5, RPE 1–10, dificuldade, humor e observações.
 
 ## 9. Roadmap
 
-### Fase 0 — Fundação (1 semana)
+### Fase 0 — Fundação (1 semana) ✅ PR #1
 - Projeto Expo + TS strict, lint/format, Expo Router, CI rodando testes
 - Schema SQLite + migrações + seeds (sons embutidos, templates)
 - **Tela de login mock** + `MockAuthService` + navegação para as abas
 
-### Fase 1 — Treinos e núcleo do timer (2 semanas)
+### Fase 1 — Treinos e núcleo do timer (2 semanas) ✅ PR #2
 - **Lista de treinos** e **Novo/Editar treino** com ciclos, tempos padrão e sobrescrita por exercício
 - `timeline.ts` (resolução de tempos herdados/sobrescritos) + `timerMachine` com testes completos
 - **Detalhe do treino** com tempo total e tempo por ciclo
 - **Player** em primeiro plano com sons de início de trabalho/descanso e haptics
 
-### Fase 2 — Sons (1–2 semanas)
+### Fase 2 — Sons (1–2 semanas) ✅ PR #3
 - Biblioteca de sons embutidos, **tela de sons do treino**, sons globais, pré-escuta
 - Importação de sons do usuário, sobrescrita por exercício
 - Voz (TTS) e ducking
 
-### Fase 3 — Estatísticas (2 semanas)
+### Fase 3 — Estatísticas (2 semanas) ✅ PR #4
 - Log de fases durante o treino, checkpoint e sessões abandonadas
 - **Feedback pós-treino**, **Estatísticas do treino** e **Estatísticas gerais** com gráficos
 
-### Fase 4 — Background e polimento (2 semanas)
+### Fase 4 — Background e polimento (2 semanas) ✅ PR #5
 - Notificações agendadas + áudio em background (iOS) + foreground service (Android)
-- Teste de precisão em dispositivo real
-- Templates (Tabata, HIIT, EMOM, AMRAP, Circuito), export/import JSON, tema escuro, acessibilidade
-- Beta via TestFlight / Play Internal Testing
+- Teste de precisão em dispositivo real *(pendente — requer aparelho físico)*
+- Templates (Tabata, HIIT, EMOM, AMRAP com contador de rounds, Circuito), export/import JSON, bloqueio de toques, confirmação ao sair do editor com alterações
+- `eas.json` pronto; beta via TestFlight / Play Internal Testing *(pendente — requer contas Apple/Google)*
 
 ### v2 (futuro)
 - Live Activities / widget, Apple Watch / Wear OS

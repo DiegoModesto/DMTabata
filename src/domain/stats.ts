@@ -27,6 +27,8 @@ export type SessionRecord = {
   phasesCompleted: number;
   phasesSkipped: number;
   phasesTotal: number;
+  /** Rounds contados manualmente (AMRAP). */
+  roundsDone: number | null;
   feedback: Feedback | null;
 };
 
