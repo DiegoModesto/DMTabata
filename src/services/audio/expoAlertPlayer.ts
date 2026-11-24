@@ -30,6 +30,20 @@ export function createExpoAlertPlayer(): AlertPlayer {
   const players = new Map<SoundId, AudioPlayer>();
   const userSources: Record<SoundId, string> = {};
   let currentMode: AudioOptions | null = null;
+  /** Som do canal "surpresa" tocando agora (um novo interrompe o anterior). */
+  let currentSurprise: AudioPlayer | null = null;
+
+  function stopSurprise() {
+    if (!currentSurprise) return;
+    const player = currentSurprise;
+    currentSurprise = null;
+    try {
+      player.pause();
+      void player.seekTo(0).catch(() => {});
+    } catch {
+      // player já liberado
+    }
+  }
 
   async function applyAudioMode(options: AudioOptions = { duckMusic: true }) {
     if (currentMode?.duckMusic === options.duckMusic) return;
@@ -59,14 +73,15 @@ export function createExpoAlertPlayer(): AlertPlayer {
     return player;
   }
 
-  function play(soundId: SoundId, volume: number) {
+  function play(soundId: SoundId, volume: number): AudioPlayer | null {
     const player = getPlayer(soundId);
-    if (!player) return;
+    if (!player) return null;
     player.volume = volume;
     player
       .seekTo(0)
       .then(() => player.play())
       .catch(() => player.play());
+    return player;
   }
 
   return {
@@ -85,15 +100,22 @@ export function createExpoAlertPlayer(): AlertPlayer {
     },
     execute(commands: AlertCommand[]) {
       for (const command of commands) {
-        if (command.type === 'sound') play(command.soundId, command.volume);
+        if (command.type === 'sound') {
+          if (command.channel === 'surprise') {
+            stopSurprise();
+            currentSurprise = play(command.soundId, command.volume);
+          } else play(command.soundId, command.volume);
+        } else if (command.type === 'stopChannel') stopSurprise();
         else if (command.type === 'haptic') playHaptic(command.style);
-        else Speech.speak(command.text, { language: command.lang, useApplicationAudioSession: true });
+        else
+          Speech.speak(command.text, { language: command.lang, useApplicationAudioSession: true });
       }
     },
     preview(soundId, volume = 1) {
       void applyAudioMode(currentMode ?? undefined).then(() => play(soundId, volume));
     },
     release() {
+      currentSurprise = null;
       void Speech.stop();
       players.forEach((p) => p.remove());
       players.clear();

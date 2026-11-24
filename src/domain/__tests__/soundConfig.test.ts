@@ -85,3 +85,42 @@ describe('hasOverrides', () => {
     expect(hasOverrides(layer({ sounds: { ...layer().sounds, cycleEnd: 'gong' } }))).toBe(true);
   });
 });
+
+describe('sons surpresa nas camadas de configuração', () => {
+  it('padrão: lista vazia e chance de 30%', () => {
+    const s = resolveAlertSettings();
+    expect(s.surpriseSounds).toEqual([]);
+    expect(s.surpriseChance).toBe(0.3);
+  });
+
+  it('treino herda a lista global (null) ou a substitui; [] desliga só no treino', () => {
+    const global = {
+      ...emptySoundConfig('g', 'G'),
+      surpriseSounds: ['a', 'b'],
+      surpriseChance: 0.5,
+    };
+    const inherits = emptySoundConfig('w', 'W');
+    const replaces = { ...emptySoundConfig('w', 'W'), surpriseSounds: ['c'] };
+    const off = { ...emptySoundConfig('w', 'W'), surpriseSounds: [] };
+    expect(resolveAlertSettings(global, inherits)).toMatchObject({
+      surpriseSounds: ['a', 'b'],
+      surpriseChance: 0.5,
+    });
+    expect(resolveAlertSettings(global, replaces).surpriseSounds).toEqual(['c']);
+    expect(resolveAlertSettings(global, off).surpriseSounds).toEqual([]);
+  });
+
+  it('chance fica entre 0 e 1 e a lista é limpa', () => {
+    const layer = {
+      ...emptySoundConfig('g', 'G'),
+      surpriseSounds: ['a', 'a', 'silent'],
+      surpriseChance: 3,
+    };
+    expect(resolveAlertSettings(layer)).toMatchObject({ surpriseSounds: ['a'], surpriseChance: 1 });
+  });
+
+  it('sons surpresa entram no pré-carregamento', () => {
+    const s = resolveAlertSettings({ ...emptySoundConfig('g', 'G'), surpriseSounds: ['x'] });
+    expect(soundsInUse(s)).toContain('x');
+  });
+});

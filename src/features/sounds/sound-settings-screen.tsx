@@ -77,6 +77,7 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
   const [base, setBase] = useState<AlertSettings>(DEFAULT_ALERT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [picking, setPicking] = useState<AlertSlot | null>(null);
+  const [pickingSurprise, setPickingSurprise] = useState(false);
   const [recording, setRecording] = useState(false);
 
   const [version, setVersion] = useState(0);
@@ -217,6 +218,67 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
         ))}
       </Card>
 
+      <Card>
+        <ThemedText type="smallBold">Sons surpresa</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Durante o trabalho, em momentos sorteados, toca um destes sons. Um novo interrompe o
+          anterior, e pausar ou terminar o treino silencia.
+          {config && config.surpriseSounds === null && settings.surpriseSounds.length
+            ? ' (padrão)'
+            : ''}
+        </ThemedText>
+        {settings.surpriseSounds.length === 0 ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            Nenhum som surpresa escolhido.
+          </ThemedText>
+        ) : (
+          settings.surpriseSounds.map((id) => {
+            const name = soundName(id, library);
+            return (
+              <View key={id} style={styles.rowBetween}>
+                <ThemedText type="small" style={styles.flex}>
+                  {name}
+                </ThemedText>
+                <IconButton
+                  glyph="▶"
+                  label={`Ouvir surpresa ${name}`}
+                  onPress={() => alertPlayer.preview(id, settings.volume)}
+                />
+                {editable ? (
+                  <IconButton
+                    glyph="✕"
+                    label={`Tirar ${name} das surpresas`}
+                    color={theme.danger}
+                    onPress={() =>
+                      update({
+                        surpriseSounds: settings.surpriseSounds.filter((s) => s !== id),
+                      })
+                    }
+                  />
+                ) : null}
+              </View>
+            );
+          })
+        )}
+        <Stepper
+          label="Chance por exercício"
+          format="count"
+          suffix="%"
+          step={10}
+          min={10}
+          max={100}
+          value={Math.round(settings.surpriseChance * 100)}
+          onChange={(v) => editable && update({ surpriseChance: v / 100 })}
+        />
+        {editable ? (
+          <Button
+            title="Adicionar som surpresa"
+            variant="secondary"
+            onPress={() => setPickingSurprise(true)}
+          />
+        ) : null}
+      </Card>
+
       {editable ? (
         <Button
           title="Restaurar padrão"
@@ -277,6 +339,16 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
           reload();
           Alert.alert('Som gravado', `"${sound.name}" já pode ser usado nos treinos.`);
         }}
+      />
+
+      <SoundPickerModal
+        visible={pickingSurprise}
+        title="Adicionar som surpresa"
+        library={library.filter((s) => !settings.surpriseSounds.includes(s.id))}
+        selected={null}
+        hideSilent
+        onSelect={(id) => id && update({ surpriseSounds: [...settings.surpriseSounds, id] })}
+        onClose={() => setPickingSurprise(false)}
       />
 
       <SoundPickerModal

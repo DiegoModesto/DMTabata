@@ -93,12 +93,19 @@ describe('soundConfigRepository', () => {
       voiceLang: 'en-US',
       announceNext: false,
       duckMusic: null,
+      surpriseSounds: ['chicote', 'risada'],
+      surpriseChance: 0.4,
     };
     await configs.save(config);
     expect(await configs.getById('c1')).toEqual(config);
 
     await configs.save({ ...config, volume: null, hapticsEnabled: null });
     expect(await configs.getById('c1')).toMatchObject({ volume: null, hapticsEnabled: null });
+
+    await configs.save({ ...config, surpriseSounds: [], surpriseChance: null });
+    expect(await configs.getById('c1')).toMatchObject({ surpriseSounds: [], surpriseChance: null });
+    await configs.save({ ...config, surpriseSounds: null });
+    expect((await configs.getById('c1'))?.surpriseSounds).toBeNull();
   });
 
   it('rejeita som inexistente (integridade referencial)', async () => {

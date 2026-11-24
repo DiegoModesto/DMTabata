@@ -21,6 +21,8 @@ type Props = {
   selected: string | null;
   /** Texto da opção "herdar"; se ausente, a opção não aparece. */
   inheritLabel?: string;
+  /** Esconde a opção "Silencioso". */
+  hideSilent?: boolean;
   onSelect: (soundId: string | null) => void;
   onClose: () => void;
 };
@@ -32,6 +34,7 @@ export function SoundPickerModal({
   library,
   selected,
   inheritLabel,
+  hideSilent,
   onSelect,
   onClose,
 }: Props) {
@@ -42,7 +45,7 @@ export function SoundPickerModal({
       label: null,
       options: [
         ...(inheritLabel ? [{ id: null, name: inheritLabel, playable: false }] : []),
-        { id: SILENT_SOUND_ID, name: SILENT_SOUND_NAME, playable: false },
+        ...(hideSilent ? [] : [{ id: SILENT_SOUND_ID, name: SILENT_SOUND_NAME, playable: false }]),
       ],
     },
     ...groupSounds(library.filter((s) => s.id !== SILENT_SOUND_ID)).map((group) => ({

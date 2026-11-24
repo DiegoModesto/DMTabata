@@ -1,5 +1,6 @@
 import { alertsForEvents, type AlertCommand, type AlertSettings } from '@/domain/alerts';
 import { createSessionRecorder, type SessionLog } from '@/domain/sessionRecorder';
+import { dueSurprises, planSurprises, type Surprise } from '@/domain/surprises';
 import type { Timeline } from '@/domain/timeline';
 
 import {
@@ -30,19 +31,41 @@ export type ControllerUpdate = {
  * Orquestra motor + eventos + alertas, sem React. O hook `usePlayer` apenas chama
  * `update(now)` periodicamente e repassa os comandos para o AlertPlayer.
  */
-export function createTimerController(timeline: Timeline, settings: AlertSettings) {
+export function createTimerController(
+  timeline: Timeline,
+  settings: AlertSettings,
+  random: () => number = Math.random,
+) {
   let state: TimerState = initialTimerState;
   let last: TimerSnapshot | null = null;
   let alertSettings = settings;
   const recorder = createSessionRecorder(timeline);
+  // Sorteio feito uma vez por treino (refeito só se a lista/chance mudar).
+  let surprises: Surprise[] = planSurprises(timeline, settings, random);
+
+  const stopSurprise: AlertCommand = { type: 'stopChannel', channel: 'surprise' };
+
+  function surpriseCommands(prev: TimerSnapshot | null, next: TimerSnapshot): AlertCommand[] {
+    if (alertSettings.volume <= 0) return [];
+    return dueSurprises(surprises, prev, next).map((s) => ({
+      type: 'sound',
+      soundId: s.soundId,
+      volume: alertSettings.volume,
+      slot: 'surprise',
+      channel: 'surprise',
+    }));
+  }
 
   function update(now: number): ControllerUpdate {
     state = tick(state, now, timeline);
     const next = snapshot(state, now, timeline);
     recorder.observe(next, now);
     const events = diffEvents(last, next, alertSettings, state.stoppedEarly);
+    const commands = [...surpriseCommands(last, next), ...alertsForEvents(events, alertSettings)];
+    // Ao terminar, a trilha surpresa para antes do som de fim.
+    if (events.some((e) => e.type === 'finished')) commands.unshift(stopSurprise);
     last = next;
-    return { snapshot: next, events, commands: alertsForEvents(events, alertSettings) };
+    return { snapshot: next, events, commands };
   }
 
   return {
@@ -50,8 +73,14 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
     /** Snapshot do instante sem registrar eventos (consulta). */
     peek: (now: number) => snapshot(state, now, timeline),
     setSettings(next: AlertSettings) {
+      const changed =
+        next.surpriseChance !== alertSettings.surpriseChance ||
+        next.surpriseSounds.join() !== alertSettings.surpriseSounds.join();
       alertSettings = next;
+      if (changed) surprises = planSurprises(timeline, next, random);
     },
+    /** Surpresas sorteadas para este treino (consulta/testes). */
+    getSurprises: () => surprises,
     /** Registro das fases realizadas até agora (para estatísticas). */
     getLog: (): SessionLog => recorder.log(),
     dispatch(action: TimerAction, now: number): ControllerUpdate {
@@ -84,7 +113,12 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
           break;
       }
       recorder.rebase(snapshot(state, now, timeline), now);
-      return update(now);
+      const result = update(now);
+      // Pausar ou parar silencia a trilha surpresa que estiver tocando.
+      if ((action === 'pause' || action === 'stop') && !result.commands.includes(stopSurprise)) {
+        result.commands.unshift(stopSurprise);
+      }
+      return result;
     },
     update,
   };

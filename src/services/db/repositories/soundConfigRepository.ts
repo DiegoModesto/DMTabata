@@ -21,6 +21,8 @@ type ConfigRow = {
   haptics_enabled: number | null;
   halfway_alert: number | null;
   duck_music: number | null;
+  surprise_sound_ids: string | null;
+  surprise_chance: number | null;
 };
 
 const SLOT_COLUMNS: Record<AlertSlot, keyof ConfigRow> = {
@@ -35,6 +37,16 @@ const SLOT_COLUMNS: Record<AlertSlot, keyof ConfigRow> = {
 
 const toBool = (v: number | null) => (v === null ? null : v === 1);
 const fromBool = (v: boolean | null) => (v === null ? null : v ? 1 : 0);
+
+function parseIds(json: string | null): string[] | null {
+  if (json === null) return null;
+  try {
+    const value: unknown = JSON.parse(json);
+    return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : null;
+  } catch {
+    return null;
+  }
+}
 
 function toConfig(row: ConfigRow): SoundConfig {
   return {
@@ -51,6 +63,8 @@ function toConfig(row: ConfigRow): SoundConfig {
     voiceLang: row.voice_lang,
     announceNext: toBool(row.announce_next),
     duckMusic: toBool(row.duck_music),
+    surpriseSounds: parseIds(row.surprise_sound_ids),
+    surpriseChance: row.surprise_chance,
   };
 }
 
@@ -68,8 +82,8 @@ export function createSoundConfigRepository(db: SqlDatabase) {
         `INSERT INTO sound_configs (id, name, work_start_sound_id, rest_start_sound_id,
            countdown_sound_id, cycle_end_sound_id, workout_end_sound_id, halfway_sound_id,
            countdown_from, volume, voice_enabled, voice_lang, announce_next, haptics_enabled,
-           halfway_alert, duck_music, prepare_start_sound_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           halfway_alert, duck_music, prepare_start_sound_id, surprise_sound_ids, surprise_chance)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            work_start_sound_id = excluded.work_start_sound_id,
@@ -86,7 +100,9 @@ export function createSoundConfigRepository(db: SqlDatabase) {
            haptics_enabled = excluded.haptics_enabled,
            halfway_alert = excluded.halfway_alert,
            duck_music = excluded.duck_music,
-           prepare_start_sound_id = excluded.prepare_start_sound_id`,
+           prepare_start_sound_id = excluded.prepare_start_sound_id,
+           surprise_sound_ids = excluded.surprise_sound_ids,
+           surprise_chance = excluded.surprise_chance`,
         [
           config.id,
           config.name,
@@ -105,6 +121,8 @@ export function createSoundConfigRepository(db: SqlDatabase) {
           fromBool(config.halfwayAlert),
           fromBool(config.duckMusic),
           config.sounds.prepareStart,
+          config.surpriseSounds === null ? null : JSON.stringify(config.surpriseSounds),
+          config.surpriseChance,
         ],
       );
     },

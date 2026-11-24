@@ -185,6 +185,46 @@ describe('SoundSettingsScreen — som da preparação', () => {
   });
 });
 
+describe('SoundSettingsScreen — sons surpresa', () => {
+  it('adiciona e remove sons do sorteio e ajusta a chance', async () => {
+    const { services } = await setup();
+    await services.sounds.addUserSound({ name: 'Chicote', uri: 'file:///c.mp3' });
+    await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
+    expect(await screen.findByText('Nenhum som surpresa escolhido.')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Adicionar som surpresa' }));
+    expect(screen.queryByRole('radio', { name: 'Silencioso' })).toBeNull();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Chicote' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Adicionar som surpresa' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Gongo' }));
+    expect(screen.getByRole('button', { name: 'Ouvir surpresa Chicote' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir surpresa Gongo' })).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Tirar Gongo das surpresas' }));
+    expect(screen.queryByRole('button', { name: 'Ouvir surpresa Gongo' })).toBeNull();
+
+    await waitFor(async () => {
+      const s = await services.soundService.settingsForWorkout(planExampleWorkout());
+      expect(s.surpriseSounds).toHaveLength(1);
+      expect(s.surpriseChance).toBe(0.3);
+    });
+  });
+
+  it('treino não personalizado mostra a lista global sem permitir editar', async () => {
+    const { services } = await setup();
+    const global = await services.soundService.globalConfig();
+    await services.soundService.saveConfig({ ...global, surpriseSounds: ['gong'] });
+    const workout = planExampleWorkout();
+    await services.workouts.save(workout, null);
+    await renderWithServices(
+      <SoundSettingsScreen scope={{ type: 'workout', workoutId: workout.id }} />,
+      services,
+    );
+    expect(await screen.findByRole('button', { name: 'Ouvir surpresa Gongo' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Adicionar som surpresa' })).toBeNull();
+  });
+});
+
 describe('SoundSettingsScreen — seletor por categoria', () => {
   it('mostra os sons agrupados (ringue, alertas) e permite escolher o sino de ringue', async () => {
     const { services } = await setup();
