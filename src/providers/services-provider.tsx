@@ -1,23 +1,31 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 
-import { createServices, type Services } from '@/services/container';
+import { createServices, type ServiceOverrides, type Services } from '@/services/container';
 import type { SqlDatabase } from '@/services/db/database';
 import { migrate } from '@/services/db/migrate';
 import { seed } from '@/services/db/seed';
 import type { AuthState } from '@/stores/authStore';
+import type { WorkoutsState } from '@/stores/workoutsStore';
 
 const ServicesContext = createContext<Services | null>(null);
 
 type Props = {
   openDatabase: () => Promise<SqlDatabase>;
+  createOverrides?: () => ServiceOverrides;
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: unknown) => void;
 };
 
 /** Abre o banco, aplica migrações/seeds e expõe os serviços para a árvore. */
-export function ServicesProvider({ openDatabase, children, fallback = null, onError }: Props) {
+export function ServicesProvider({
+  openDatabase,
+  createOverrides,
+  children,
+  fallback = null,
+  onError,
+}: Props) {
   const [services, setServices] = useState<Services | null>(null);
 
   useEffect(() => {
@@ -27,7 +35,7 @@ export function ServicesProvider({ openDatabase, children, fallback = null, onEr
         const db = await openDatabase();
         await migrate(db);
         await seed(db);
-        const created = createServices(db);
+        const created = createServices(db, createOverrides?.());
         await created.authStore.getState().restore();
         if (!cancelled) setServices(created);
       } catch (error) {
@@ -37,7 +45,7 @@ export function ServicesProvider({ openDatabase, children, fallback = null, onEr
     return () => {
       cancelled = true;
     };
-  }, [openDatabase, onError]);
+  }, [openDatabase, createOverrides, onError]);
 
   if (!services) return <>{fallback}</>;
   return <ServicesContext.Provider value={services}>{children}</ServicesContext.Provider>;
@@ -62,4 +70,8 @@ export function useServices(): Services {
 
 export function useAuth<T>(selector: (state: AuthState) => T): T {
   return useStore(useServices().authStore, selector);
+}
+
+export function useWorkouts<T>(selector: (state: WorkoutsState) => T): T {
+  return useStore(useServices().workoutsStore, selector);
 }
