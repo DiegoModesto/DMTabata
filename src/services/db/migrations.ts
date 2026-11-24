@@ -177,4 +177,12 @@ export const migrations: Migration[] = [
       ALTER TABLE sound_configs ADD COLUMN surprise_chance REAL;
     `,
   },
+  {
+    version: 6,
+    name: 'música de fundo',
+    sql: `
+      ALTER TABLE sound_configs ADD COLUMN background_music_id TEXT;
+      ALTER TABLE sound_configs ADD COLUMN music_volume REAL;
+    `,
+  },
 ];

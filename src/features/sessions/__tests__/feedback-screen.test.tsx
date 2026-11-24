@@ -64,7 +64,14 @@ describe('FeedbackScreen — resumo e avaliação pós-treino', () => {
     );
   });
 
-  it('"Pular" segue sem salvar avaliação', async () => {
+  it('"Pular" no topo (visível sem rolar) segue sem salvar avaliação', async () => {
+    const { services, sessionId, workout } = await setup();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Pular avaliação' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith(`/workout/${workout.id}/stats`);
+    expect((await services.sessionService.getSession(sessionId))?.feedback).toBeNull();
+  });
+
+  it('"Pular" no fim da tela também segue sem salvar', async () => {
     const { services, sessionId, workout } = await setup();
     await fireEvent.press(await screen.findByRole('button', { name: 'Pular' }));
     expect(mockRouter.replace).toHaveBeenCalledWith(`/workout/${workout.id}/stats`);

@@ -95,6 +95,8 @@ describe('soundConfigRepository', () => {
       duckMusic: null,
       surpriseSounds: ['chicote', 'risada'],
       surpriseChance: 0.4,
+      backgroundMusicId: 'vibes',
+      musicVolume: 0.35,
     };
     await configs.save(config);
     expect(await configs.getById('c1')).toEqual(config);

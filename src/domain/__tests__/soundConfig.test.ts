@@ -124,3 +124,37 @@ describe('sons surpresa nas camadas de configuração', () => {
     expect(soundsInUse(s)).toContain('x');
   });
 });
+
+describe('música de fundo nas camadas', () => {
+  it('padrão: sem música, volume 35% (abaixo dos alertas)', () => {
+    expect(resolveAlertSettings()).toMatchObject({ backgroundMusicId: null, musicVolume: 0.35 });
+  });
+
+  it('treino herda a música global, troca por outra ou desliga com "silencioso"', () => {
+    const global = { ...emptySoundConfig('g', 'G'), backgroundMusicId: 'vibes', musicVolume: 0.5 };
+    expect(resolveAlertSettings(global, emptySoundConfig('w', 'W'))).toMatchObject({
+      backgroundMusicId: 'vibes',
+      musicVolume: 0.5,
+    });
+    expect(
+      resolveAlertSettings(global, { ...emptySoundConfig('w', 'W'), backgroundMusicId: 'outra' })
+        .backgroundMusicId,
+    ).toBe('outra');
+    expect(
+      resolveAlertSettings(global, {
+        ...emptySoundConfig('w', 'W'),
+        backgroundMusicId: SILENT_SOUND_ID,
+      }).backgroundMusicId,
+    ).toBeNull();
+  });
+
+  it('música entra no pré-carregamento e o volume fica entre 0 e 1', () => {
+    const s = resolveAlertSettings({
+      ...emptySoundConfig('g', 'G'),
+      backgroundMusicId: 'vibes',
+      musicVolume: 7,
+    });
+    expect(soundsInUse(s)).toContain('vibes');
+    expect(s.musicVolume).toBe(1);
+  });
+});

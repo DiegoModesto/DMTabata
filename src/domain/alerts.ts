@@ -71,6 +71,10 @@ export type AlertSettings = {
   surpriseSounds: SoundId[];
   /** Chance (0..1) de cada fase de trabalho ganhar um som surpresa. */
   surpriseChance: number;
+  /** Música em loop durante o treino; `null` = sem música. */
+  backgroundMusicId: SoundId | null;
+  /** Volume da música relativo ao volume dos alertas (0..1), sempre abaixo dos sons. */
+  musicVolume: number;
 };
 
 export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
@@ -93,6 +97,8 @@ export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
   duckMusic: true,
   surpriseSounds: [],
   surpriseChance: 0.3,
+  backgroundMusicId: null,
+  musicVolume: 0.35,
 };
 
 export type AlertCommand =
@@ -105,6 +111,9 @@ export type AlertCommand =
       channel?: 'surprise';
     }
   | { type: 'stopChannel'; channel: 'surprise' }
+  /** Música de fundo: começa em loop, pausa, retoma e para junto com o treino. */
+  | { type: 'music'; action: 'start'; soundId: SoundId; volume: number }
+  | { type: 'music'; action: 'pause' | 'resume' | 'stop' }
   | { type: 'haptic'; style: HapticStyle }
   | { type: 'speak'; text: string; lang: string };
 

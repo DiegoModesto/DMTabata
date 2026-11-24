@@ -158,6 +158,10 @@ export function createSoundService(deps: {
       return {
         ...settings,
         surpriseSounds: settings.surpriseSounds.filter((id) => available.has(id)),
+        backgroundMusicId:
+          settings.backgroundMusicId && available.has(settings.backgroundMusicId)
+            ? settings.backgroundMusicId
+            : null,
       };
     },
   };

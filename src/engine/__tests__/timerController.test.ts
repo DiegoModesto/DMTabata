@@ -149,3 +149,52 @@ describe('timerController — sons surpresa', () => {
     expect(controller.getSurprises().length).toBeGreaterThan(0);
   });
 });
+
+describe('timerController — música de fundo', () => {
+  const settings = { ...DEFAULT_ALERT_SETTINGS, backgroundMusicId: 'vibes', musicVolume: 0.4 };
+  const music = (commands: AlertCommand[]) =>
+    commands.filter((c) => c.type === 'music').map((c) => (c.type === 'music' ? c.action : ''));
+
+  it('começa em loop ao iniciar, com volume abaixo dos alertas, antes do som da preparação', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, { ...settings, volume: 0.5 });
+    const { commands } = controller.dispatch('start', 0);
+    expect(commands[0]).toEqual({ type: 'music', action: 'start', soundId: 'vibes', volume: 0.2 });
+  });
+
+  it('pausa, retoma e para junto com o treino', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, settings);
+    controller.dispatch('start', 0);
+    expect(music(controller.dispatch('pause', 5_000).commands)).toEqual(['pause']);
+    expect(music(controller.dispatch('resume', 6_000).commands)).toEqual(['resume']);
+    expect(music(controller.dispatch('stop', 7_000).commands)).toEqual(['stop']);
+  });
+
+  it('ao terminar o treino, a música para antes do som de fim', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, settings);
+    controller.dispatch('start', 0);
+    const { commands } = controller.update(timeline.totalMs + 100);
+    const stopAt = commands.findIndex((c) => c.type === 'music' && c.action === 'stop');
+    const endAt = commands.findIndex((c) => c.type === 'sound' && c.slot === 'workoutEnd');
+    expect(stopAt).toBeGreaterThanOrEqual(0);
+    expect(stopAt).toBeLessThan(endAt);
+  });
+
+  it('pular e voltar não mexem na música; sem música não há comandos', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, settings);
+    controller.dispatch('start', 0);
+    expect(music(controller.dispatch('skip', 2_000).commands)).toEqual([]);
+    expect(music(controller.dispatch('back', 3_000).commands)).toEqual([]);
+    const plain = createTimerController(timeline, DEFAULT_ALERT_SETTINGS);
+    expect(music(plain.dispatch('start', 0).commands)).toEqual([]);
+  });
+
+  it('volume zero não inicia a música', () => {
+    const timeline = compileTimeline(createTabataWorkout());
+    const controller = createTimerController(timeline, { ...settings, volume: 0 });
+    expect(music(controller.dispatch('start', 0).commands)).toEqual([]);
+  });
+});

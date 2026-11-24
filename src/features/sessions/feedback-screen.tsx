@@ -76,7 +76,18 @@ export function FeedbackScreen({ sessionId }: { sessionId: string }) {
   const set = (changes: Partial<Feedback>) => setFeedback((f) => ({ ...f, ...changes }));
 
   return (
-    <Screen title="Como foi o treino?" scroll>
+    <Screen
+      title="Como foi o treino?"
+      scroll
+      headerRight={
+        <Button
+          title="Pular"
+          variant="secondary"
+          accessibilityLabel="Pular avaliação"
+          onPress={next}
+          style={styles.skip}
+        />
+      }>
       <Card>
         <ThemedText type="smallBold">{session.workoutName}</ThemedText>
         <ThemedText>
@@ -162,4 +173,5 @@ export function FeedbackScreen({ sessionId }: { sessionId: string }) {
 const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: Spacing.two },
   flex: { flex: 1 },
+  skip: { minHeight: 40, paddingHorizontal: Spacing.three },
 });
