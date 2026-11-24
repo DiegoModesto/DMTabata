@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
+import { Icon, type IconName } from '@/components/ui/icon';
 import { Screen } from '@/components/ui/screen';
 import { PhaseColors, Spacing } from '@/constants/theme';
 import type { AlertSettings } from '@/domain/alerts';
@@ -37,6 +38,41 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
       accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}>
       <View style={[styles.progressFill, { width: `${Math.min(100, progress * 100)}%` }]} />
     </View>
+  );
+}
+
+/** Botão do player: ícone grande sobre a cor da fase, com o nome embaixo. */
+function ControlButton({
+  icon,
+  label,
+  onPress,
+  main,
+  subtle,
+  accessibilityLabel,
+}: {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  main?: boolean;
+  subtle?: boolean;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.ctrlButton,
+        main && styles.ctrlMain,
+        subtle && styles.ctrlSubtle,
+        { opacity: pressed ? 0.7 : 1 },
+      ]}>
+      <Icon name={icon} size={main ? 34 : subtle ? 20 : 26} color={WHITE} />
+      <ThemedText type="smallBold" style={styles.white}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -214,39 +250,31 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
           onLongPress={() => setLocked(false)}
           delayLongPress={600}
           style={styles.lockBar}>
+          <Icon name="lock" size={22} color={WHITE} />
           <ThemedText type="smallBold" style={styles.white}>
-            🔒 Toque e segure para desbloquear
+            Toque e segure para desbloquear
           </ThemedText>
         </Pressable>
       ) : (
         <>
           <View style={styles.controls}>
-            <Button
-              title="⏮ Voltar"
-              variant="secondary"
-              onPress={() => dispatch('back')}
-              style={styles.ctrl}
-            />
-            <Button
-              title={paused ? '▶ Continuar' : '⏸ Pausar'}
+            <ControlButton icon="previous" label="Voltar" onPress={() => dispatch('back')} />
+            <ControlButton
+              icon={paused ? 'play' : 'pause'}
+              label={paused ? 'Continuar' : 'Pausar'}
+              main
               onPress={() => dispatch(paused ? 'resume' : 'pause')}
-              style={styles.ctrlMain}
             />
-            <Button
-              title="Pular ⏭"
-              variant="secondary"
-              onPress={() => dispatch('skip')}
-              style={styles.ctrl}
-            />
+            <ControlButton icon="next" label="Pular" onPress={() => dispatch('skip')} />
           </View>
           <View style={styles.controls}>
-            <Button title="Parar" variant="ghost" onPress={confirmStop} style={styles.ctrl} />
-            <Button
-              title="🔒 Bloquear"
-              variant="ghost"
+            <ControlButton icon="stop" label="Parar" subtle onPress={confirmStop} />
+            <ControlButton
+              icon="lock"
+              label="Bloquear"
               accessibilityLabel="Bloquear controles"
+              subtle
               onPress={() => setLocked(true)}
-              style={styles.ctrl}
             />
           </View>
         </>
@@ -308,8 +336,24 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', backgroundColor: WHITE },
   controls: { flexDirection: 'row', gap: Spacing.two },
-  ctrl: { flex: 1 },
-  ctrlMain: { flex: 1.4 },
+  ctrlButton: {
+    flex: 1,
+    minHeight: 76,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  ctrlMain: { flex: 1.4, minHeight: 92, backgroundColor: 'rgba(255,255,255,0.3)' },
+  ctrlSubtle: {
+    minHeight: 52,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
   mainBtn: { minHeight: 56 },
   rounds: {
     flexDirection: 'row',
@@ -324,5 +368,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.two,
   },
 });

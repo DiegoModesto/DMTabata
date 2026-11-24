@@ -37,7 +37,7 @@ describe('WorkoutEditorScreen — novo treino', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Editar Exercício 3' }));
     await fireEvent.changeText(screen.getByLabelText('Nome do exercício'), 'Prancha');
-    await pressTimes('Aumentar Trabalho', 6); // 30 → 60
+    await pressTimes('Aumentar Trabalho', 30); // 30 → 60, de 1 em 1
     expect(screen.getByLabelText('Trabalho: 1:00')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Concluir' }));
 
@@ -87,7 +87,7 @@ describe('WorkoutEditorScreen — novo treino', () => {
   it('"Voltar ao padrão do ciclo" desfaz a sobrescrita', async () => {
     await renderWithServices(<WorkoutEditorScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Editar Exercício 1' }));
-    await pressTimes('Aumentar Descanso', 2);
+    await pressTimes('Aumentar Descanso', 10);
     expect(screen.getByLabelText('Descanso: 0:20')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Voltar ao padrão do ciclo' }));
     expect(screen.getByLabelText('Descanso: 0:10')).toBeTruthy();

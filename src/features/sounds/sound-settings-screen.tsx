@@ -30,6 +30,7 @@ import { RecordSoundModal } from './record-sound-modal';
 import { SoundPickerModal } from './sound-picker-modal';
 import { SoundRow } from './sound-row';
 import { useSoundLibrary } from './use-sound-library';
+import { previewButton, useSoundPreview } from './use-sound-preview';
 
 export type SoundScope = { type: 'global' } | { type: 'workout'; workoutId: string };
 
@@ -71,8 +72,9 @@ function SwitchRow({
 
 export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
   const theme = useTheme();
-  const { soundService, alertPlayer } = useServices();
+  const { soundService } = useServices();
   const { library, reload } = useSoundLibrary();
+  const preview = useSoundPreview();
   const [config, setConfig] = useState<SoundConfig | null>(null);
   const [base, setBase] = useState<AlertSettings>(DEFAULT_ALERT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
@@ -177,9 +179,10 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
             value={soundName(settings.sounds[slot], library)}
             inherited={!config || config.sounds[slot] === null}
             onPress={() => (editable ? setPicking(slot) : undefined)}
+            playing={preview.isPlaying(`slot:${slot}`)}
             onPreview={
               settings.sounds[slot]
-                ? () => alertPlayer.preview(settings.sounds[slot]!, settings.volume)
+                ? () => preview.toggle(`slot:${slot}`, settings.sounds[slot]!, settings.volume)
                 : undefined
             }
           />
@@ -240,9 +243,8 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
                   {name}
                 </ThemedText>
                 <IconButton
-                  glyph="▶"
-                  label={`Ouvir surpresa ${name}`}
-                  onPress={() => alertPlayer.preview(id, settings.volume)}
+                  {...previewButton(preview.isPlaying(`surprise:${id}`), `surpresa ${name}`)}
+                  onPress={() => preview.toggle(`surprise:${id}`, id, settings.volume)}
                 />
                 {editable ? (
                   <IconButton
@@ -301,9 +303,8 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
                 {s.name}
               </ThemedText>
               <IconButton
-                glyph="▶"
-                label={`Ouvir ${s.name}`}
-                onPress={() => alertPlayer.preview(s.id)}
+                {...previewButton(preview.isPlaying(`mine:${s.id}`), s.name)}
+                onPress={() => preview.toggle(`mine:${s.id}`, s.id)}
               />
               <IconButton
                 glyph="✕"

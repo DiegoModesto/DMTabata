@@ -8,7 +8,8 @@ import { Spacing } from '@/constants/theme';
 import { SILENT_SOUND_ID } from '@/domain/alerts';
 import { groupSounds, SILENT_SOUND_NAME, type SoundEntry } from '@/domain/sounds';
 import { useTheme } from '@/hooks/use-theme';
-import { useServices } from '@/providers/services-provider';
+
+import { previewButton, useSoundPreview } from './use-sound-preview';
 
 type Option = { id: string | null; name: string; playable: boolean };
 type Section = { label: string | null; options: Option[] };
@@ -39,7 +40,11 @@ export function SoundPickerModal({
   onClose,
 }: Props) {
   const theme = useTheme();
-  const { alertPlayer } = useServices();
+  const preview = useSoundPreview();
+  const close = () => {
+    preview.stop();
+    onClose();
+  };
   const sections: Section[] = [
     {
       label: null,
@@ -65,7 +70,7 @@ export function SoundPickerModal({
           accessibilityLabel={item.name}
           onPress={() => {
             onSelect(item.id);
-            onClose();
+            close();
           }}>
           <ThemedText style={isSelected ? { color: theme.primary } : undefined}>
             {isSelected ? '● ' : '○ '}
@@ -74,9 +79,8 @@ export function SoundPickerModal({
         </Pressable>
         {item.playable && item.id ? (
           <IconButton
-            glyph="▶"
-            label={`Ouvir ${item.name}`}
-            onPress={() => alertPlayer.preview(item.id!)}
+            {...previewButton(preview.isPlaying(item.id), item.name)}
+            onPress={() => preview.toggle(item.id!, item.id!)}
           />
         ) : null}
       </View>
@@ -84,7 +88,7 @@ export function SoundPickerModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
       <View style={styles.backdrop}>
         <ThemedView style={styles.sheet}>
           <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>
@@ -106,7 +110,7 @@ export function SoundPickerModal({
               </View>
             ))}
           </ScrollView>
-          <Button title="Fechar" variant="secondary" onPress={onClose} />
+          <Button title="Fechar" variant="secondary" onPress={close} />
         </ThemedView>
       </View>
     </Modal>
