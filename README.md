@@ -17,6 +17,10 @@ Aplicativo mobile de treinos intervalados (Tabata, HIIT, EMOM, AMRAP, circuitos)
 - **Estatísticas**: tempo realizado por fase, pausas, fases puladas, feedback pós-treino (nota, esforço, dificuldade, humor, observações), gráficos, sequência de dias e histórico.
 - **Backup**: exportar/importar treinos em JSON.
 
+### Pacote pessoal de sons
+
+O app traz embutido um **pacote pessoal** com 18 áudios curtos (corneta, campainha de boxe, trilhas e memes) em `assets/sounds/pack/`, baixados do [MyInstants](https://www.myinstants.com). Os direitos pertencem aos respectivos autores — veja `assets/sounds/pack/CREDITOS.md`. Em **Configurações → Sons e alertas → Usar pacote pessoal**, um toque aplica a configuração completa (preparação, trabalho, descanso, fim, sons surpresa e música de fundo).
+
 ## Desenvolvimento
 
 ```bash

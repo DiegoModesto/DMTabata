@@ -11,16 +11,23 @@ export type SoundEntry = {
   createdAt: number;
 };
 
-export type SoundCategory = 'training' | 'fight' | 'alerts' | 'user';
+export type SoundCategory = 'training' | 'fight' | 'alerts' | 'pack' | 'user';
 
 export const SOUND_CATEGORY_LABELS: Record<SoundCategory, string> = {
   training: 'Sinais de treino',
   fight: 'Ringue e luta',
   alerts: 'Alertas sonoros',
+  pack: 'Pacote pessoal',
   user: 'Meus sons',
 };
 
-export const SOUND_CATEGORY_ORDER: SoundCategory[] = ['training', 'fight', 'alerts', 'user'];
+export const SOUND_CATEGORY_ORDER: SoundCategory[] = [
+  'training',
+  'fight',
+  'alerts',
+  'pack',
+  'user',
+];
 
 export const BUILTIN_SOUNDS: { id: BuiltinSoundId; name: string; category: SoundCategory }[] = [
   { id: 'go', name: 'Largada', category: 'training' },
@@ -42,6 +49,25 @@ export const BUILTIN_SOUNDS: { id: BuiltinSoundId; name: string; category: Sound
   { id: 'chime', name: 'Notificação', category: 'alerts' },
   { id: 'alarm', name: 'Alarme', category: 'alerts' },
   { id: 'siren', name: 'Sirene', category: 'alerts' },
+  // Pacote pessoal (mp3 de terceiros, baixados do MyInstants — ver assets/sounds/pack/CREDITOS.md)
+  { id: 'pack-vamo-acordar', name: 'Vamo acordar', category: 'pack' },
+  { id: 'pack-corneta', name: 'Corneta', category: 'pack' },
+  { id: 'pack-campainha-boxe', name: 'Campainha de boxe', category: 'pack' },
+  { id: 'pack-chicote', name: 'Chicote', category: 'pack' },
+  { id: 'pack-risada-maligna', name: 'Risada maligna', category: 'pack' },
+  { id: 'pack-pica-pau', name: 'E lá vamos nós (Pica-Pau)', category: 'pack' },
+  { id: 'pack-sukuna', name: 'Sukuna: vamos, é cedo', category: 'pack' },
+  { id: 'pack-como-sou-lindo', name: 'Meu Deus, como sou lindo', category: 'pack' },
+  { id: 'pack-saint-seiya', name: 'Saint Seiya – tema de luta', category: 'pack' },
+  { id: 'pack-pegasus-fantasy', name: 'Pegasus Fantasy', category: 'pack' },
+  { id: 'pack-lula-me-ajuda', name: 'Lula: por favor, me ajuda', category: 'pack' },
+  { id: 'pack-ze-gotinha', name: 'Cadê o Zé Gotinha', category: 'pack' },
+  { id: 'pack-lula-treine', name: 'Lula: treine', category: 'pack' },
+  { id: 'pack-fahhh', name: 'Fahhh', category: 'pack' },
+  { id: 'pack-vine-boom', name: 'Vine boom', category: 'pack' },
+  { id: 'pack-para-para', name: 'Pára pára pára, aeee', category: 'pack' },
+  { id: 'pack-cabou', name: 'Cabou', category: 'pack' },
+  { id: 'pack-background-vibes', name: 'Background vibes', category: 'pack' },
 ];
 
 /** Categoria de um som da biblioteca (importados e gravados ficam em "Meus sons"). */
@@ -65,6 +91,38 @@ export const SILENT_SOUND_NAME = 'Silencioso';
 
 export const isBuiltinSoundId = (id: string): id is BuiltinSoundId =>
   BUILTIN_SOUNDS.some((s) => s.id === id);
+
+/** Sons do pacote pessoal (mp3) — o iOS não usa mp3 em notificações. */
+export const isPackSoundId = (id: string): boolean =>
+  id.startsWith('pack-') && isBuiltinSoundId(id);
+
+/**
+ * Configuração do pacote pessoal: o que "Usar pacote pessoal" aplica nos sons globais.
+ * Preparação, trabalho, descanso, fim, sons surpresa e música de fundo.
+ */
+export const PERSONAL_PACK_PRESET = {
+  sounds: {
+    prepareStart: 'pack-vamo-acordar',
+    workStart: 'pack-corneta',
+    restStart: 'pack-campainha-boxe',
+    workoutEnd: 'pack-cabou',
+  },
+  surpriseSounds: [
+    'pack-chicote',
+    'pack-risada-maligna',
+    'pack-pica-pau',
+    'pack-sukuna',
+    'pack-como-sou-lindo',
+    'pack-saint-seiya',
+    'pack-pegasus-fantasy',
+    'pack-lula-me-ajuda',
+    'pack-ze-gotinha',
+    'pack-lula-treine',
+    'pack-fahhh',
+    'pack-vine-boom',
+  ],
+  backgroundMusicId: 'pack-background-vibes',
+} as const;
 
 export function soundName(id: string | null, library: SoundEntry[]): string {
   if (!id || id === SILENT_SOUND_ID) return SILENT_SOUND_NAME;

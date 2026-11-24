@@ -170,13 +170,18 @@ describe('SoundSettingsScreen — sons do treino', () => {
 describe('SoundSettingsScreen — som da preparação', () => {
   it('preparação começa sem som e aceita um som importado do usuário', async () => {
     const { services } = await setup();
-    const mine = await services.sounds.addUserSound({ name: 'Vamo acordar', uri: 'file:///v.mp3' });
+    const mine = await services.sounds.addUserSound({
+      name: 'Meu aquecimento',
+      uri: 'file:///v.mp3',
+    });
     await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
     await fireEvent.press(
       await screen.findByRole('button', { name: 'Início da preparação: Silencioso (padrão)' }),
     );
-    await fireEvent.press(screen.getByRole('radio', { name: 'Vamo acordar' }));
-    expect(screen.getByRole('button', { name: 'Início da preparação: Vamo acordar' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Meu aquecimento' }));
+    expect(
+      screen.getByRole('button', { name: 'Início da preparação: Meu aquecimento' }),
+    ).toBeTruthy();
     await waitFor(async () =>
       expect(
         (await services.soundService.settingsForWorkout(planExampleWorkout())).sounds.prepareStart,
@@ -188,16 +193,16 @@ describe('SoundSettingsScreen — som da preparação', () => {
 describe('SoundSettingsScreen — sons surpresa', () => {
   it('adiciona e remove sons do sorteio e ajusta a chance', async () => {
     const { services } = await setup();
-    await services.sounds.addUserSound({ name: 'Chicote', uri: 'file:///c.mp3' });
+    await services.sounds.addUserSound({ name: 'Meu chicote', uri: 'file:///c.mp3' });
     await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
     expect(await screen.findByText('Nenhum som surpresa escolhido.')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Adicionar som surpresa' }));
     expect(screen.queryByRole('radio', { name: 'Silencioso' })).toBeNull();
-    await fireEvent.press(screen.getByRole('radio', { name: 'Chicote' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Meu chicote' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Adicionar som surpresa' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Gongo' }));
-    expect(screen.getByRole('button', { name: 'Ouvir surpresa Chicote' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir surpresa Meu chicote' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ouvir surpresa Gongo' })).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Tirar Gongo das surpresas' }));
@@ -228,49 +233,51 @@ describe('SoundSettingsScreen — sons surpresa', () => {
 describe('SoundSettingsScreen — pré-escuta com play/pause', () => {
   async function setupMine() {
     const ctx = await setup();
-    await ctx.services.sounds.addUserSound({ name: 'Corneta', uri: 'file:///c.mp3' });
-    await ctx.services.sounds.addUserSound({ name: 'Chicote', uri: 'file:///x.mp3' });
+    await ctx.services.sounds.addUserSound({ name: 'Minha corneta', uri: 'file:///c.mp3' });
+    await ctx.services.sounds.addUserSound({ name: 'Meu chicote', uri: 'file:///x.mp3' });
     await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, ctx.services);
-    await screen.findByRole('button', { name: 'Ouvir Corneta' });
+    await screen.findByRole('button', { name: 'Ouvir Minha corneta' });
     return ctx;
   }
 
   it('tocar vira "pausar"; tocar de novo para o áudio e volta a "ouvir"', async () => {
     const { alertPlayer } = await setupMine();
-    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Corneta' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Minha corneta' }));
     expect(alertPlayer.previewed).toHaveLength(1);
-    await fireEvent.press(screen.getByRole('button', { name: 'Parar Corneta' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Parar Minha corneta' }));
     expect(alertPlayer.previewStops).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir Minha corneta' })).toBeTruthy();
   });
 
   it('quando o áudio termina sozinho, o botão volta a "ouvir"', async () => {
     const { alertPlayer } = await setupMine();
-    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Corneta' }));
-    expect(screen.getByRole('button', { name: 'Parar Corneta' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Minha corneta' }));
+    expect(screen.getByRole('button', { name: 'Parar Minha corneta' })).toBeTruthy();
     await act(async () => alertPlayer.finishPreview?.());
-    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir Minha corneta' })).toBeTruthy();
   });
 
   it('ouvir outro som troca a pausa para ele (só um toca por vez)', async () => {
     await setupMine();
-    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Corneta' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Chicote' }));
-    expect(screen.getByRole('button', { name: 'Parar Chicote' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Minha corneta' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Meu chicote' }));
+    expect(screen.getByRole('button', { name: 'Parar Meu chicote' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir Minha corneta' })).toBeTruthy();
   });
 
   it('o mesmo som em outro lugar da tela não mostra pausa junto', async () => {
     const { services } = await setupMine();
-    const corneta = (await services.soundService.library()).find((s) => s.name === 'Corneta')!;
+    const corneta = (await services.soundService.library()).find(
+      (s) => s.name === 'Minha corneta',
+    )!;
     await fireEvent.press(
       screen.getByRole('button', { name: 'Início do trabalho: Largada (padrão)' }),
     );
-    await fireEvent.press(screen.getByRole('radio', { name: 'Corneta' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Minha corneta' }));
     expect(corneta).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Ouvir Início do trabalho' }));
     expect(screen.getByRole('button', { name: 'Parar Início do trabalho' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Ouvir Corneta' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ouvir Minha corneta' })).toBeTruthy();
   });
 
   it('no seletor também alterna, e fechar para o áudio', async () => {
@@ -304,6 +311,51 @@ describe('SoundSettingsScreen — música de fundo', () => {
         musicVolume: 0.95,
       }),
     );
+  });
+});
+
+describe('SoundSettingsScreen — pacote pessoal', () => {
+  it('"Usar pacote pessoal" aplica preparação, trabalho, descanso, fim, surpresas e música', async () => {
+    const { services } = await setup();
+    const alert = jest.spyOn(Alert, 'alert');
+    await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Usar pacote pessoal' }));
+    await act(async () => {
+      await alert.mock.calls[0][2]!.find((o) => o.text === 'Aplicar')!.onPress!();
+    });
+    expect(screen.getByRole('button', { name: 'Início da preparação: Vamo acordar' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Início do trabalho: Corneta' })).toBeTruthy();
+    await waitFor(async () =>
+      expect(await services.soundService.settingsForWorkout(planExampleWorkout())).toMatchObject({
+        sounds: expect.objectContaining({
+          restStart: 'pack-campainha-boxe',
+          workoutEnd: 'pack-cabou',
+        }),
+        backgroundMusicId: 'pack-background-vibes',
+        surpriseSounds: expect.arrayContaining(['pack-chicote', 'pack-vine-boom']),
+      }),
+    );
+    alert.mockRestore();
+  });
+
+  it('o pacote aparece como categoria no seletor', async () => {
+    const { services } = await setup();
+    await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
+    await fireEvent.press(await screen.findByRole('button', { name: /Início do trabalho:/ }));
+    expect(screen.getByRole('header', { name: 'PACOTE PESSOAL' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Pegasus Fantasy' })).toBeTruthy();
+  });
+
+  it('nos sons de um treino o botão não aparece', async () => {
+    const { services } = await setup();
+    const workout = planExampleWorkout();
+    await services.workouts.save(workout, null);
+    await renderWithServices(
+      <SoundSettingsScreen scope={{ type: 'workout', workoutId: workout.id }} />,
+      services,
+    );
+    await screen.findByText(/Usando os sons globais/);
+    expect(screen.queryByRole('button', { name: 'Usar pacote pessoal' })).toBeNull();
   });
 });
 
