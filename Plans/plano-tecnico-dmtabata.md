@@ -461,8 +461,10 @@ Nota 1–5, RPE 1–10, dificuldade, humor e observações.
 - Filtro de período: 7 dias / 30 dias / 90 dias / tudo.
 
 ### Implementação
-- Agregações via SQL (Drizzle) em `services/db/statsRepository.ts`; poucos dados locais, sem necessidade de cache.
-- Gráficos com **victory-native** (ou react-native-gifted-charts).
+- Agregações em funções puras (`domain/stats.ts`) sobre as sessões carregadas do SQLite — volume local pequeno e 100% testável. *(Fase 3)*
+- Tempo realizado medido pelo tempo decorrido do motor e distribuído exatamente entre as fases (`domain/sessionRecorder.ts`), sem erro de tick; pausa medida à parte.
+- Gráficos de barras próprios com Views (`components/bar-chart.tsx`) — sem dependência nativa; cada barra é acessível.
+- Sessões sem tempo de trabalho (parou no preparo) são descartadas. Excluir um treino mantém o histórico (nome vem da cópia salva).
 - O log de fases é gravado em memória durante o treino e persistido em uma transação ao salvar; se o app fechar no meio, a sessão em andamento é salva como `abandoned` (checkpoint a cada troca de fase).
 
 ---

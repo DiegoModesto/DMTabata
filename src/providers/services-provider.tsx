@@ -38,6 +38,7 @@ export function ServicesProvider({
         const created = createServices(db, createOverrides?.());
         await created.authStore.getState().restore();
         await created.soundService.registerUserSources();
+        await created.sessionService.abandonStale();
         if (!cancelled) setServices(created);
       } catch (error) {
         onError?.(error);

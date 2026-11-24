@@ -1,4 +1,5 @@
 import { alertsForEvents, type AlertCommand, type AlertSettings } from '@/domain/alerts';
+import { createSessionRecorder, type SessionLog } from '@/domain/sessionRecorder';
 import type { Timeline } from '@/domain/timeline';
 
 import {
@@ -33,10 +34,12 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
   let state: TimerState = initialTimerState;
   let last: TimerSnapshot | null = null;
   let alertSettings = settings;
+  const recorder = createSessionRecorder(timeline);
 
   function update(now: number): ControllerUpdate {
     state = tick(state, now, timeline);
     const next = snapshot(state, now, timeline);
+    recorder.observe(next, now);
     const events = diffEvents(last, next, alertSettings, state.stoppedEarly);
     last = next;
     return { snapshot: next, events, commands: alertsForEvents(events, alertSettings) };
@@ -47,7 +50,12 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
     setSettings(next: AlertSettings) {
       alertSettings = next;
     },
+    /** Registro das fases realizadas até agora (para estatísticas). */
+    getLog: (): SessionLog => recorder.log(),
     dispatch(action: TimerAction, now: number): ControllerUpdate {
+      // Contabiliza o tempo até este instante antes de a ação mudar o estado.
+      const before = snapshot(tick(state, now, timeline), now, timeline);
+      recorder.observe(before, now);
       switch (action) {
         case 'start':
           state = start(state, now, timeline);
@@ -59,6 +67,7 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
           state = resume(state, now);
           break;
         case 'skip':
+          if (before.phaseIndex >= 0) recorder.markSkipped(before.phaseIndex);
           state = skip(state, now, timeline);
           break;
         case 'back': {
@@ -72,6 +81,7 @@ export function createTimerController(timeline: Timeline, settings: AlertSetting
           state = stop(state, now, timeline);
           break;
       }
+      recorder.rebase(snapshot(state, now, timeline), now);
       return update(now);
     },
     update,

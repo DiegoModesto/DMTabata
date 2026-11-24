@@ -19,28 +19,35 @@ import {
   type Workout,
 } from '@/domain/workout';
 import { useTheme } from '@/hooks/use-theme';
+import { formatAverage, formatDate } from '@/features/stats/format';
+import type { StatsSummary } from '@/domain/stats';
 import { useServices } from '@/providers/services-provider';
 
 export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
   const router = useRouter();
   const theme = useTheme();
-  const { workouts, workoutsStore } = useServices();
+  const { workouts, workoutsStore, sessionService } = useServices();
   const [workout, setWorkout] = useState<Workout | null>(null);
+  const [history, setHistory] = useState<StatsSummary | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      workouts.getById(workoutId).then((w) => {
+      Promise.all([
+        workouts.getById(workoutId),
+        sessionService.workoutStats(workoutId, 'all'),
+      ]).then(([w, stats]) => {
         if (!active) return;
         setWorkout(w);
         setNotFound(!w);
+        setHistory(stats.summary);
       });
       return () => {
         active = false;
       };
-    }, [workoutId, workouts]),
+    }, [workoutId, workouts, sessionService]),
   );
 
   const totals = useMemo(() => (workout ? workoutTotals(workout) : null), [workout]);
@@ -98,6 +105,20 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
         disabled={timeline.phases.length === 0}
         style={styles.start}
       />
+
+      <Card>
+        <ThemedText type="smallBold">Histórico</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {history && history.sessions > 0
+            ? `Realizado ${history.sessions}x · última vez ${formatDate(history.lastSessionAt!)} · nota média ${formatAverage(history.avgRating)}`
+            : 'Você ainda não fez este treino.'}
+        </ThemedText>
+        <Button
+          title="Estatísticas"
+          variant="secondary"
+          onPress={() => router.push(`/workout/${workout.id}/stats`)}
+        />
+      </Card>
 
       <ThemedText type="smallBold">Ciclos</ThemedText>
       {workout.cycles.map((cycle, c) => {

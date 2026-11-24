@@ -1,6 +1,6 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,19 +42,39 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
 function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSettings }) {
   useKeepAwake();
   const router = useRouter();
-  const { alertPlayer, clock } = useServices();
+  const { alertPlayer, clock, sessionService } = useServices();
   const timeline = useMemo(() => compileTimeline(workout), [workout]);
-  const { snapshot, dispatch, stoppedEarly } = usePlayer(timeline, settings, {
+  const { snapshot, dispatch, stoppedEarly, getLog } = usePlayer(timeline, settings, {
     alertPlayer,
     clock,
   });
+  const sessionRef = useRef<Promise<string> | null>(null);
+  const [saved, setSaved] = useState<{ sessionId: string } | null | undefined>(undefined);
 
   useEffect(() => {
     dispatch('start');
-  }, [dispatch]);
+    sessionRef.current = sessionService.start(workout, timeline);
+  }, [dispatch, sessionService, workout, timeline]);
 
-  const { phase, status } = snapshot;
+  const { phase, status, phaseIndex } = snapshot;
   const finished = status === 'finished';
+
+  // Checkpoint a cada troca de fase: se o app fechar, a sessão fica registrada.
+  useEffect(() => {
+    if (finished || !sessionRef.current) return;
+    void sessionRef.current.then((id) => sessionService.checkpoint(id, getLog()));
+  }, [phaseIndex, finished, getLog, sessionService]);
+
+  useEffect(() => {
+    if (!finished || !sessionRef.current) return;
+    let active = true;
+    sessionRef.current
+      .then((id) => sessionService.finish(id, getLog(), stoppedEarly))
+      .then((result) => active && setSaved(result ? { sessionId: result.sessionId } : null));
+    return () => {
+      active = false;
+    };
+  }, [finished, getLog, sessionService, stoppedEarly]);
   const background = finished ? PhaseColors.finished : PhaseColors[phase?.kind ?? 'prepare'];
 
   const confirmStop = () =>
@@ -75,7 +95,19 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
             {formatDuration(timeline.totalMs / 1000)}
           </ThemedText>
         </View>
-        <Button title="Concluir" onPress={() => router.back()} style={styles.mainBtn} />
+        {saved ? (
+          <Button
+            title="Avaliar treino"
+            onPress={() => router.replace(`/session/${saved.sessionId}/feedback`)}
+            style={styles.mainBtn}
+          />
+        ) : null}
+        <Button
+          title="Concluir"
+          variant={saved ? 'ghost' : 'primary'}
+          onPress={() => router.back()}
+          style={styles.mainBtn}
+        />
       </SafeAreaView>
     );
   }
