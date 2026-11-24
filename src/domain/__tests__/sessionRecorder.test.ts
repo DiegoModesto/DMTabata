@@ -1,17 +1,20 @@
 import { DEFAULT_ALERT_SETTINGS } from '@/domain/alerts';
 import { createTimerController } from '@/engine/timerController';
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 
 import { summarizeSession } from '../sessionRecorder';
 import { compileTimeline } from '../timeline';
 
-const timeline = compileTimeline(planExampleWorkout()); // 10s preparo + 220s
+const timeline = compileTimeline(timingWorkout()); // 10s preparo + 220s
 
 type Action = Parameters<ReturnType<typeof createTimerController>['dispatch']>[0];
 
 /** Roteiro com relógio simulado: `tick` avança com passos irregulares; `c.dispatch` age no instante dado (e move o relógio). */
 function run(
-  script: (c: { dispatch: (a: Action, at: number) => void }, tick: (until: number, step?: number) => void) => void,
+  script: (
+    c: { dispatch: (a: Action, at: number) => void },
+    tick: (until: number, step?: number) => void,
+  ) => void,
 ) {
   const controller = createTimerController(timeline, DEFAULT_ALERT_SETTINGS);
   let now = 0;

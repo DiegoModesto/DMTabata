@@ -160,4 +160,13 @@ export const migrations: Migration[] = [
     name: 'rounds do AMRAP na sessão',
     sql: `ALTER TABLE sessions ADD COLUMN rounds_done INTEGER;`,
   },
+  {
+    version: 4,
+    name: 'som da preparação e preparação mínima de 16 s',
+    sql: `
+      ALTER TABLE sound_configs ADD COLUMN prepare_start_sound_id TEXT
+        REFERENCES sounds(id) ON DELETE SET NULL;
+      UPDATE workouts SET prepare_sec = 16 WHERE prepare_sec < 16;
+    `,
+  },
 ];

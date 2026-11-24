@@ -16,7 +16,9 @@ function simulate(timelineSource = createTabataWorkout(), until?: number) {
     now += 100;
     commands.push(...controller.update(now).commands);
   }
-  const sounds = commands.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.slot : ''));
+  const sounds = commands
+    .filter((c) => c.type === 'sound')
+    .map((c) => (c.type === 'sound' ? c.slot : ''));
   const count = (slot: string) => sounds.filter((s) => s === slot).length;
   return { controller, commands, sounds, count, timeline };
 }
@@ -64,8 +66,8 @@ describe('timerController — treino completo (regra de negócio dos sons)', () 
     const timeline = compileTimeline(createTabataWorkout());
     const controller = createTimerController(timeline, DEFAULT_ALERT_SETTINGS);
     controller.dispatch('start', 0);
-    controller.update(15_000); // 5s dentro do 1º trabalho
-    const update = controller.dispatch('back', 15_000);
+    controller.update(21_000); // 5s dentro do 1º trabalho
+    const update = controller.dispatch('back', 21_000);
     expect(update.snapshot.phase?.kind).toBe('work');
     expect(update.commands).toContainEqual(
       expect.objectContaining({ type: 'sound', slot: 'workStart' }),

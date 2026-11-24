@@ -6,6 +6,7 @@ import type { SqlDatabase } from '../database';
 type ConfigRow = {
   id: string;
   name: string;
+  prepare_start_sound_id: string | null;
   work_start_sound_id: string | null;
   rest_start_sound_id: string | null;
   countdown_sound_id: string | null;
@@ -23,6 +24,7 @@ type ConfigRow = {
 };
 
 const SLOT_COLUMNS: Record<AlertSlot, keyof ConfigRow> = {
+  prepareStart: 'prepare_start_sound_id',
   workStart: 'work_start_sound_id',
   restStart: 'rest_start_sound_id',
   countdown: 'countdown_sound_id',
@@ -66,8 +68,8 @@ export function createSoundConfigRepository(db: SqlDatabase) {
         `INSERT INTO sound_configs (id, name, work_start_sound_id, rest_start_sound_id,
            countdown_sound_id, cycle_end_sound_id, workout_end_sound_id, halfway_sound_id,
            countdown_from, volume, voice_enabled, voice_lang, announce_next, haptics_enabled,
-           halfway_alert, duck_music)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           halfway_alert, duck_music, prepare_start_sound_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            work_start_sound_id = excluded.work_start_sound_id,
@@ -83,7 +85,8 @@ export function createSoundConfigRepository(db: SqlDatabase) {
            announce_next = excluded.announce_next,
            haptics_enabled = excluded.haptics_enabled,
            halfway_alert = excluded.halfway_alert,
-           duck_music = excluded.duck_music`,
+           duck_music = excluded.duck_music,
+           prepare_start_sound_id = excluded.prepare_start_sound_id`,
         [
           config.id,
           config.name,
@@ -101,6 +104,7 @@ export function createSoundConfigRepository(db: SqlDatabase) {
           fromBool(config.hapticsEnabled),
           fromBool(config.halfwayAlert),
           fromBool(config.duckMusic),
+          config.sounds.prepareStart,
         ],
       );
     },

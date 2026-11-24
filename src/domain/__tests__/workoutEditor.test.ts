@@ -18,7 +18,12 @@ describe('editorReducer — tempos por exercício', () => {
       w,
     );
     const third = w.cycles[0].items[2];
-    w = editorReducer(w, { type: 'updateItem', cycleId, itemId: third.id, changes: { workSec: 60 } });
+    w = editorReducer(w, {
+      type: 'updateItem',
+      cycleId,
+      itemId: third.id,
+      changes: { workSec: 60 },
+    });
 
     expect(w.cycles[0].items.map((i) => i.workSec)).toEqual([null, null, 60, null, null]);
     expect(workoutTotals(w).cycleDurationsSec[0]).toBe(220);
@@ -89,7 +94,11 @@ describe('editorReducer — tempos por exercício', () => {
       itemId: items[2].id,
       changes: { workSoundId: 'horn', restSoundId: 'silent' },
     });
-    expect(next.cycles[0].items[2]).toMatchObject({ workSoundId: 'horn', restSoundId: 'silent', workSec: 60 });
+    expect(next.cycles[0].items[2]).toMatchObject({
+      workSoundId: 'horn',
+      restSoundId: 'silent',
+      workSec: 60,
+    });
     next = editorReducer(next, {
       type: 'updateItem',
       cycleId,
@@ -124,13 +133,19 @@ describe('editorReducer — estrutura', () => {
     expect(more.cycles[0].items[2].workSec).toBe(60);
     const fewer = editorReducer(more, { type: 'setItemCount', cycleId, count: 2 });
     expect(fewer.cycles[0].items.map((i) => i.label)).toEqual(['Polichinelo', 'Agachamento']);
-    expect(editorReducer(w, { type: 'setItemCount', cycleId, count: 0 }).cycles[0].items).toHaveLength(1);
+    expect(
+      editorReducer(w, { type: 'setItemCount', cycleId, count: 0 }).cycles[0].items,
+    ).toHaveLength(1);
   });
 
   it('adiciona ciclos herdando os tempos padrão do último', () => {
     const next = editorReducer(planExampleWorkout(), { type: 'addCycle' });
     expect(next.cycles).toHaveLength(2);
-    expect(next.cycles[1]).toMatchObject({ name: 'Ciclo 2', defaultWorkSec: 30, defaultRestSec: 10 });
+    expect(next.cycles[1]).toMatchObject({
+      name: 'Ciclo 2',
+      defaultWorkSec: 30,
+      defaultRestSec: 10,
+    });
   });
 
   it('duplica ciclo logo abaixo, com ids novos', () => {
@@ -191,6 +206,12 @@ describe('editorReducer — estrutura', () => {
     expect(w.prepareSec).toBe(LIMITS.maxPrepareSec);
     expect(w.restBetweenCyclesSec).toBe(0);
     expect(w.cooldownSec).toBe(13);
+  });
+
+  it('preparação não desce abaixo do mínimo de 16 s', () => {
+    expect(apply([{ type: 'setPrepare', seconds: 5 }]).prepareSec).toBe(LIMITS.minPrepareSec);
+    expect(apply([{ type: 'setPrepare', seconds: 0 }]).prepareSec).toBe(16);
+    expect(apply([{ type: 'setPrepare', seconds: 20 }]).prepareSec).toBe(20);
   });
 
   it('repetições entre 1 e 99', () => {

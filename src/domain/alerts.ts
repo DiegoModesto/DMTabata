@@ -2,9 +2,11 @@ import type { Phase } from '@/domain/timeline';
 import type { TimerEvent } from '@/engine/timerEngine';
 
 /** Momentos do treino em que um som pode tocar. */
-export type AlertSlot = 'workStart' | 'restStart' | 'countdown' | 'cycleEnd' | 'workoutEnd' | 'halfway';
+export type AlertSlot =
+  'prepareStart' | 'workStart' | 'restStart' | 'countdown' | 'cycleEnd' | 'workoutEnd' | 'halfway';
 
 export const ALERT_SLOTS: AlertSlot[] = [
+  'prepareStart',
   'workStart',
   'restStart',
   'countdown',
@@ -14,6 +16,7 @@ export const ALERT_SLOTS: AlertSlot[] = [
 ];
 
 export const ALERT_SLOT_LABELS: Record<AlertSlot, string> = {
+  prepareStart: 'Início da preparação',
   workStart: 'Início do trabalho',
   restStart: 'Início do descanso',
   countdown: 'Contagem regressiva',
@@ -68,6 +71,7 @@ export type AlertSettings = {
 
 export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
   sounds: {
+    prepareStart: null,
     workStart: 'go',
     restStart: 'rest',
     countdown: 'beep',
@@ -102,7 +106,7 @@ function slotForEvent(event: TimerEvent): AlertSlot | null {
         case 'cycleRest':
           return 'cycleEnd';
         case 'prepare':
-          return null;
+          return 'prepareStart';
       }
       return null;
     case 'countdown':
@@ -115,6 +119,7 @@ function slotForEvent(event: TimerEvent): AlertSlot | null {
 }
 
 const HAPTIC_BY_SLOT: Record<AlertSlot, HapticStyle> = {
+  prepareStart: 'light',
   workStart: 'heavy',
   restStart: 'medium',
   countdown: 'light',

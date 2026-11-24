@@ -1,6 +1,6 @@
 import { compileTimeline } from '@/domain/timeline';
 import { createTabataWorkout } from '@/domain/workout';
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 
 import {
   back,
@@ -18,7 +18,7 @@ import {
   type TimerEvent,
 } from '../timerEngine';
 
-const timeline = compileTimeline(planExampleWorkout()); // 10s preparo + 220s
+const timeline = compileTimeline(timingWorkout()); // 10s preparo + 220s
 const T0 = 1_000_000;
 const options = { countdownFrom: 3, halfwayAlert: false };
 
@@ -157,7 +157,11 @@ describe('diffEvents — quando tocar sons', () => {
 
   it('contagem 3, 2, 1 no fim do preparo e depois início do trabalho', () => {
     const events = run(0, 10_000).map((e) =>
-      e.type === 'countdown' ? `cd${e.secondsLeft}` : e.type === 'phaseStarted' ? e.phase.kind : e.type,
+      e.type === 'countdown'
+        ? `cd${e.secondsLeft}`
+        : e.type === 'phaseStarted'
+          ? e.phase.kind
+          : e.type,
     );
     expect(events).toEqual(['prepare', 'cd3', 'cd2', 'cd1', 'work']);
   });
@@ -194,8 +198,8 @@ describe('diffEvents — quando tocar sons', () => {
   it('meio do trabalho só quando habilitado e em fases ≥ 10s', () => {
     const tabata = compileTimeline(createTabataWorkout());
     const s = start(initialTimerState, T0, tabata);
-    const before = snapshot(s, T0 + 10_000 + 9_900, tabata);
-    const after = snapshot(s, T0 + 10_000 + 10_000, tabata);
+    const before = snapshot(s, T0 + 16_000 + 9_900, tabata);
+    const after = snapshot(s, T0 + 16_000 + 10_000, tabata);
     expect(diffEvents(before, after, options)).toEqual([]);
     expect(diffEvents(before, after, { ...options, halfwayAlert: true })).toEqual([
       expect.objectContaining({ type: 'halfway' }),

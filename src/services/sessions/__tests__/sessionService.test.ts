@@ -1,11 +1,11 @@
 import { DEFAULT_ALERT_SETTINGS } from '@/domain/alerts';
 import { compileTimeline } from '@/domain/timeline';
 import { createTimerController } from '@/engine/timerController';
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 import { createTestServices } from '@/test/renderWithServices';
 
 const DAY = 24 * 60 * 60 * 1000;
-const workout = planExampleWorkout();
+const workout = timingWorkout();
 const timeline = compileTimeline(workout);
 
 function logUntil(ms: number, stop = false) {
@@ -37,7 +37,10 @@ describe('sessionService — regras de registro', () => {
     const { sessionService } = await setup();
     const id = await sessionService.start(workout, timeline);
     await sessionService.finish(id, logUntil(60_000, true), true);
-    expect(await sessionService.getSession(id)).toMatchObject({ status: 'abandoned', workSec: 30 + 10 });
+    expect(await sessionService.getSession(id)).toMatchObject({
+      status: 'abandoned',
+      workSec: 30 + 10,
+    });
   });
 
   it('sessão sem tempo de trabalho (parou no preparo) é descartada', async () => {
@@ -51,7 +54,10 @@ describe('sessionService — regras de registro', () => {
     const { sessionService } = await setup();
     const id = await sessionService.start(workout, timeline);
     await sessionService.checkpoint(id, logUntil(50_000));
-    expect(await sessionService.getSession(id)).toMatchObject({ status: 'in_progress', workSec: 30 });
+    expect(await sessionService.getSession(id)).toMatchObject({
+      status: 'in_progress',
+      workSec: 30,
+    });
   });
 
   it('feedback inválido não é salvo', async () => {
@@ -81,7 +87,13 @@ describe('sessionService — estatísticas', () => {
         !!stopAt,
       );
       if (rating) {
-        await ctx.sessionService.saveFeedback(id, { rating, rpe: 6, difficulty: null, mood: null, notes: null });
+        await ctx.sessionService.saveFeedback(id, {
+          rating,
+          rpe: 6,
+          difficulty: null,
+          mood: null,
+          notes: null,
+        });
       }
     };
     await make(0, 5);
@@ -108,7 +120,9 @@ describe('sessionService — estatísticas', () => {
     expect(overview.month.sessions).toBe(3);
     expect(overview.streak).toBe(3);
     expect(overview.recent).toHaveLength(4);
-    expect(overview.topWorkouts).toEqual([{ workoutId: workout.id, name: 'Treino de perna', count: 3 }]);
+    expect(overview.topWorkouts).toEqual([
+      { workoutId: workout.id, name: 'Treino de perna', count: 3 },
+    ]);
   });
 
   it('ao abrir o app, sessões que ficaram abertas viram interrompidas', async () => {

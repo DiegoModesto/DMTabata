@@ -1,4 +1,4 @@
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 
 import { compileTimeline, findPhaseIndex } from '../timeline';
 import { createCycle, createTabataWorkout, createWorkout, workoutTotals } from '../workout';
@@ -8,7 +8,7 @@ const kinds = (w: Parameters<typeof compileTimeline>[0]) =>
 
 describe('compileTimeline', () => {
   it('exemplo do plano vira a sequência esperada de fases', () => {
-    expect(kinds(planExampleWorkout())).toEqual([
+    expect(kinds(timingWorkout())).toEqual([
       'prepare:10',
       'work:30',
       'rest:10',
@@ -23,17 +23,18 @@ describe('compileTimeline', () => {
   });
 
   it('offsets são contínuos e o total bate com workoutTotals', () => {
-    const workout = planExampleWorkout();
+    const workout = timingWorkout();
     const { phases, totalMs } = compileTimeline(workout);
     phases.forEach((p, i) => {
       expect(p.index).toBe(i);
-      if (i > 0) expect(p.startOffsetMs).toBe(phases[i - 1].startOffsetMs + phases[i - 1].durationMs);
+      if (i > 0)
+        expect(p.startOffsetMs).toBe(phases[i - 1].startOffsetMs + phases[i - 1].durationMs);
     });
     expect(totalMs).toBe(workoutTotals(workout).totalSec * 1000);
   });
 
   it('inclui o rótulo, posição e próximo exercício em cada fase', () => {
-    const { phases } = compileTimeline(planExampleWorkout());
+    const { phases } = compileTimeline(timingWorkout());
     const prancha = phases.find((p) => p.label === 'Prancha')!;
     expect(prancha).toMatchObject({ kind: 'work', itemIndex: 2, totalItems: 5, cycleIndex: 0 });
     expect(phases[0].nextWorkLabel).toBe('Polichinelo');
@@ -78,8 +79,12 @@ describe('compileTimeline', () => {
   });
 
   it('leva o som de cada exercício para as fases de trabalho e descanso', () => {
-    const workout = planExampleWorkout();
-    workout.cycles[0].items[2] = { ...workout.cycles[0].items[2], workSoundId: 'horn', restSoundId: 'silent' };
+    const workout = timingWorkout();
+    workout.cycles[0].items[2] = {
+      ...workout.cycles[0].items[2],
+      workSoundId: 'horn',
+      restSoundId: 'silent',
+    };
     const { phases } = compileTimeline(workout);
     const prancha = phases.findIndex((p) => p.label === 'Prancha');
     expect(phases[prancha].soundOverride).toBe('horn');
@@ -131,7 +136,7 @@ describe('compileTimeline', () => {
 });
 
 describe('findPhaseIndex', () => {
-  const timeline = compileTimeline(planExampleWorkout());
+  const timeline = compileTimeline(timingWorkout());
 
   it('encontra a fase pelo tempo decorrido', () => {
     expect(findPhaseIndex(timeline, 0)).toBe(0);

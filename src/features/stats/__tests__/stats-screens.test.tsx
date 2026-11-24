@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { SessionDetailScreen } from '@/features/sessions/session-detail-screen';
 import { WorkoutDetailScreen } from '@/features/workouts/workout-detail-screen';
 import { mockRouter, resetRouterMock } from '@/test/expoRouterMock';
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 import { createTestServices, renderWithServices } from '@/test/renderWithServices';
 import { recordSession } from '@/test/sessionFactory';
 
@@ -15,7 +15,7 @@ jest.mock('expo-router', () => require('@/test/expoRouterMock'));
 async function setupWithHistory() {
   const services = await createTestServices();
   await services.authStore.getState().signIn({ email: 'a@x.com' });
-  const workout = await services.workoutsStore.getState().save(planExampleWorkout());
+  const workout = await services.workoutsStore.getState().save(timingWorkout());
   const done = await recordSession(services, workout, { feedback: { rating: 5, rpe: 8 } });
   const skipped = await recordSession(services, workout, {
     skipAtMs: 10_000 + 3_000,
@@ -45,7 +45,9 @@ describe('WorkoutStatsScreen', () => {
     await screen.findByLabelText('vezes realizado: 2');
     await fireEvent.press(screen.getByRole('radio', { name: '7 dias' }));
     expect(await screen.findByLabelText('vezes realizado: 2')).toBeTruthy();
-    expect(screen.getByRole('radio', { name: '7 dias' }).props.accessibilityState.checked).toBe(true);
+    expect(screen.getByRole('radio', { name: '7 dias' }).props.accessibilityState.checked).toBe(
+      true,
+    );
   });
 
   it('tocar numa sessão abre o detalhe', async () => {

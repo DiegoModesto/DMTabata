@@ -18,7 +18,11 @@ describe('backup — exportar e importar treinos', () => {
     expect(imported.id).not.toBe(source.id);
     expect(imported.cycles[0].items[0].id).not.toBe(source.cycles[0].items[0].id);
     expect(imported.name).toBe('Treino de perna');
-    expect(imported.cycles[0].items[2]).toMatchObject({ label: 'Prancha', workSec: 60, workSoundId: 'gong' });
+    expect(imported.cycles[0].items[2]).toMatchObject({
+      label: 'Prancha',
+      workSec: 60,
+      workSoundId: 'gong',
+    });
     expect(workoutTotals(imported).totalSec).toBe(workoutTotals(source).totalSec);
     expect(imported.createdAt).toBe(999);
   });
@@ -35,7 +39,10 @@ describe('backup — exportar e importar treinos', () => {
   it('ignora treinos inválidos e informa quantos', () => {
     const valid = planExampleWorkout();
     const invalid = { ...planExampleWorkout(), name: '' };
-    const text = JSON.stringify({ ...buildBackup([valid, invalid]), workouts: [valid, invalid, 'lixo'] });
+    const text = JSON.stringify({
+      ...buildBackup([valid, invalid]),
+      workouts: [valid, invalid, 'lixo'],
+    });
     const parsed = parseBackup(text, { knownSoundIds: known });
     expect(parsed).toMatchObject({ ok: true, skipped: 2 });
     if (parsed.ok) expect(parsed.workouts).toHaveLength(1);
@@ -48,8 +55,21 @@ describe('backup — exportar e importar treinos', () => {
     });
     expect(parseBackup('{"workouts": []}', { knownSoundIds: known })).toMatchObject({ ok: false });
     expect(
-      parseBackup(JSON.stringify({ app: 'dmtabata', version: 99, workouts: [] }), { knownSoundIds: known }),
+      parseBackup(JSON.stringify({ app: 'dmtabata', version: 99, workouts: [] }), {
+        knownSoundIds: known,
+      }),
     ).toMatchObject({ ok: false, reason: expect.stringContaining('mais nova') });
+  });
+
+  it('backup antigo com preparação curta sobe para o mínimo de 16 s', () => {
+    const text = JSON.stringify({
+      app: 'dmtabata',
+      version: 1,
+      workouts: [{ name: 'Velho', prepareSec: 5, cycles: [{ items: [{ label: 'A' }] }] }],
+    });
+    const parsed = parseBackup(text, { knownSoundIds: known });
+    if (!parsed.ok) throw new Error();
+    expect(parsed.workouts[0].prepareSec).toBe(16);
   });
 
   it('campos ausentes recebem valores padrão seguros', () => {
@@ -60,7 +80,11 @@ describe('backup — exportar e importar treinos', () => {
     });
     const parsed = parseBackup(text, { knownSoundIds: known });
     if (!parsed.ok) throw new Error();
-    expect(parsed.workouts[0]).toMatchObject({ type: 'custom', prepareSec: 10, favorite: false });
-    expect(parsed.workouts[0].cycles[0]).toMatchObject({ defaultWorkSec: 30, defaultRestSec: 10, repeatCount: 1 });
+    expect(parsed.workouts[0]).toMatchObject({ type: 'custom', prepareSec: 16, favorite: false });
+    expect(parsed.workouts[0].cycles[0]).toMatchObject({
+      defaultWorkSec: 30,
+      defaultRestSec: 10,
+      repeatCount: 1,
+    });
   });
 });

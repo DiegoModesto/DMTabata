@@ -167,6 +167,24 @@ describe('SoundSettingsScreen — sons do treino', () => {
   });
 });
 
+describe('SoundSettingsScreen — som da preparação', () => {
+  it('preparação começa sem som e aceita um som importado do usuário', async () => {
+    const { services } = await setup();
+    const mine = await services.sounds.addUserSound({ name: 'Vamo acordar', uri: 'file:///v.mp3' });
+    await renderWithServices(<SoundSettingsScreen scope={{ type: 'global' }} />, services);
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Início da preparação: Silencioso (padrão)' }),
+    );
+    await fireEvent.press(screen.getByRole('radio', { name: 'Vamo acordar' }));
+    expect(screen.getByRole('button', { name: 'Início da preparação: Vamo acordar' })).toBeTruthy();
+    await waitFor(async () =>
+      expect(
+        (await services.soundService.settingsForWorkout(planExampleWorkout())).sounds.prepareStart,
+      ).toBe(mine.id),
+    );
+  });
+});
+
 describe('SoundSettingsScreen — seletor por categoria', () => {
   it('mostra os sons agrupados (ringue, alertas) e permite escolher o sino de ringue', async () => {
     const { services } = await setup();

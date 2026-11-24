@@ -80,9 +80,9 @@ describe('totais do treino', () => {
     expect(workoutTotals(createWorkout({ cycles: [] })).totalSec).toBe(0);
   });
 
-  it('Tabata clássico: 10s preparo + 8×20s + 7×10s = 4min', () => {
+  it('Tabata clássico: 16s preparo + 8×20s + 7×10s = 4min06s', () => {
     const tabata = createTabataWorkout();
-    expect(workoutTotals(tabata).totalSec).toBe(240);
+    expect(workoutTotals(tabata).totalSec).toBe(246);
     expect(tabata.type).toBe('tabata');
   });
 });

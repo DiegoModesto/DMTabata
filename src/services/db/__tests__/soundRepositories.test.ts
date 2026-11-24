@@ -77,6 +77,7 @@ describe('soundConfigRepository', () => {
     const config = {
       ...emptySoundConfig('c1', 'Treino'),
       sounds: {
+        prepareStart: 'ring-bell',
         workStart: 'whistle',
         restStart: 'silent',
         countdown: null,

@@ -2,14 +2,14 @@ import { DEFAULT_ALERT_SETTINGS } from '@/domain/alerts';
 import { summarizeSession } from '@/domain/sessionRecorder';
 import { compileTimeline } from '@/domain/timeline';
 import { createTimerController } from '@/engine/timerController';
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 import { createMigratedTestDatabase } from '@/test/sqliteTestDatabase';
 
 import { createSessionRepository } from '../repositories/sessionRepository';
 import { createUserRepository } from '../repositories/userRepository';
 import { createWorkoutRepository } from '../repositories/workoutRepository';
 
-const workout = planExampleWorkout();
+const workout = timingWorkout();
 const timeline = compileTimeline(workout);
 
 function fullLog(skipAt?: number) {
@@ -45,7 +45,12 @@ describe('sessionRepository', () => {
 
     const log = fullLog();
     await sessions.checkpoint(id, summarizeSession(log));
-    await sessions.finish(id, { status: 'completed', endedAt: 300_000, log, summary: summarizeSession(log) });
+    await sessions.finish(id, {
+      status: 'completed',
+      endedAt: 300_000,
+      log,
+      summary: summarizeSession(log),
+    });
 
     const saved = await sessions.getById(id);
     expect(saved).toMatchObject({
@@ -59,7 +64,12 @@ describe('sessionRepository', () => {
     });
     const phases = await sessions.phases(id);
     expect(phases).toHaveLength(10);
-    expect(phases[3]).toMatchObject({ kind: 'work', exerciseLabel: 'Agachamento', plannedMs: 30_000, actualMs: 30_000 });
+    expect(phases[3]).toMatchObject({
+      kind: 'work',
+      exerciseLabel: 'Agachamento',
+      plannedMs: 30_000,
+      actualMs: 30_000,
+    });
     expect(phases[0].exerciseLabel).toBeNull();
   });
 
@@ -67,7 +77,13 @@ describe('sessionRepository', () => {
     const { sessions } = await setup();
     const id = await sessions.start(workout, timeline.totalMs, 0);
     const log = fullLog();
-    await sessions.finish(id, { status: 'completed', endedAt: 1, log, summary: summarizeSession(log), roundsDone: 7 });
+    await sessions.finish(id, {
+      status: 'completed',
+      endedAt: 1,
+      log,
+      summary: summarizeSession(log),
+      roundsDone: 7,
+    });
     expect((await sessions.getById(id))?.roundsDone).toBe(7);
   });
 
@@ -92,7 +108,13 @@ describe('sessionRepository', () => {
   it('feedback: grava, atualiza e limpa observações em branco', async () => {
     const { sessions } = await setup();
     const id = await sessions.start(workout, timeline.totalMs, 0);
-    await sessions.saveFeedback(id, { rating: 4, rpe: 7, difficulty: 'ideal', mood: 'otimo', notes: ' boa ' });
+    await sessions.saveFeedback(id, {
+      rating: 4,
+      rpe: 7,
+      difficulty: 'ideal',
+      mood: 'otimo',
+      notes: ' boa ',
+    });
     expect((await sessions.getById(id))?.feedback).toEqual({
       rating: 4,
       rpe: 7,
@@ -100,7 +122,13 @@ describe('sessionRepository', () => {
       mood: 'otimo',
       notes: 'boa',
     });
-    await sessions.saveFeedback(id, { rating: 5, rpe: null, difficulty: null, mood: null, notes: '  ' });
+    await sessions.saveFeedback(id, {
+      rating: 5,
+      rpe: null,
+      difficulty: null,
+      mood: null,
+      notes: '  ',
+    });
     expect((await sessions.getById(id))?.feedback).toEqual({
       rating: 5,
       rpe: null,
@@ -113,7 +141,7 @@ describe('sessionRepository', () => {
   it('lista por treino, usuário e período, mais recentes primeiro', async () => {
     const { sessions, users, workouts } = await setup();
     const other = await users.create({ displayName: 'B', email: 'b@x.com' });
-    const otherWorkout = { ...planExampleWorkout(), name: 'Do outro' };
+    const otherWorkout = { ...timingWorkout(), name: 'Do outro' };
     await workouts.save(otherWorkout, other.id);
     const log = fullLog();
     const summary = summarizeSession(log);
@@ -136,7 +164,12 @@ describe('sessionRepository', () => {
     const { sessions, workouts, user } = await setup();
     const id = await sessions.start(workout, timeline.totalMs, 0);
     const log = fullLog();
-    await sessions.finish(id, { status: 'completed', endedAt: 1, log, summary: summarizeSession(log) });
+    await sessions.finish(id, {
+      status: 'completed',
+      endedAt: 1,
+      log,
+      summary: summarizeSession(log),
+    });
     await workouts.remove(workout.id);
     const record = await sessions.getById(id);
     expect(record).toMatchObject({ workoutId: null, workoutName: 'Treino de perna' });
@@ -147,7 +180,12 @@ describe('sessionRepository', () => {
     const { sessions } = await setup();
     const log = fullLog(10_000 + 5_000); // pula o Polichinelo após 5s
     const id = await sessions.start(workout, timeline.totalMs, 0);
-    await sessions.finish(id, { status: 'completed', endedAt: 1, log, summary: summarizeSession(log) });
+    await sessions.finish(id, {
+      status: 'completed',
+      endedAt: 1,
+      log,
+      summary: summarizeSession(log),
+    });
     expect(await sessions.skippedExerciseLabels([id])).toEqual(['Polichinelo']);
     expect(await sessions.skippedExerciseLabels([])).toEqual([]);
   });

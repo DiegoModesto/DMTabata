@@ -1,4 +1,4 @@
-import { planExampleWorkout } from '@/test/factories';
+import { timingWorkout } from '@/test/factories';
 
 import { DEFAULT_ALERT_SETTINGS } from '../alerts';
 import { notificationSound, planNotifications } from '../notificationPlan';
@@ -17,7 +17,7 @@ describe('notificationSound', () => {
 });
 
 describe('planNotifications — avisos com o app em segundo plano', () => {
-  const workout = planExampleWorkout();
+  const workout = timingWorkout();
   workout.cycles[0].items[2] = { ...workout.cycles[0].items[2], workSoundId: 'gong' };
   const timeline = compileTimeline(workout);
   const plan = (elapsedMs: number, overrides = {}) =>
@@ -39,7 +39,11 @@ describe('planNotifications — avisos com o app em segundo plano', () => {
       body: 'Polichinelo (30s)',
       sound: 'go.wav',
     });
-    expect(list[1]).toMatchObject({ title: 'Descanso', body: 'Próximo: Agachamento', sound: 'rest.wav' });
+    expect(list[1]).toMatchObject({
+      title: 'Descanso',
+      body: 'Próximo: Agachamento',
+      sound: 'rest.wav',
+    });
     expect(list[list.length - 1]).toEqual({
       fireAt: NOW + 225_000,
       title: 'Treino concluído!',
@@ -59,11 +63,18 @@ describe('planNotifications — avisos com o app em segundo plano', () => {
   });
 
   it('volume zero gera notificações silenciosas', () => {
-    expect(plan(0, { settings: { ...DEFAULT_ALERT_SETTINGS, volume: 0 } }).every((n) => n.sound === null)).toBe(true);
+    expect(
+      plan(0, { settings: { ...DEFAULT_ALERT_SETTINGS, volume: 0 } }).every(
+        (n) => n.sound === null,
+      ),
+    ).toBe(true);
   });
 
   it('respeita o limite e mantém o aviso de fim', () => {
-    const tabata = compileTimeline({ ...createTabataWorkout(), cycles: [{ ...createTabataWorkout().cycles[0], repeatCount: 50 }] });
+    const tabata = compileTimeline({
+      ...createTabataWorkout(),
+      cycles: [{ ...createTabataWorkout().cycles[0], repeatCount: 50 }],
+    });
     const list = planNotifications({
       timeline: tabata,
       elapsedMs: 0,
