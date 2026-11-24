@@ -15,6 +15,7 @@ const phase = (kind: Phase['kind']): Phase => ({
   repeat: 1,
   totalRepeats: 1,
   nextWorkLabel: null,
+  soundOverride: null,
 });
 
 const sounds = (settings: AlertSettings, events: Parameters<typeof alertsForEvents>[0]) =>
@@ -88,5 +89,75 @@ describe('alertsForEvents — som no início do treino e do descanso', () => {
       volume: 0.4,
     });
     expect(cmd).toMatchObject({ type: 'sound', volume: 0.4 });
+  });
+});
+
+describe('sons por exercício (sobrescrita na fase)', () => {
+  it('som do exercício substitui o do evento', () => {
+    const work = { ...phase('work'), soundOverride: 'horn' };
+    expect(sounds(DEFAULT_ALERT_SETTINGS, [{ type: 'phaseStarted', phase: work }])).toEqual([
+      'workStart:horn',
+    ]);
+  });
+
+  it('exercício "silencioso" não toca som, mas ainda vibra', () => {
+    const work = { ...phase('work'), soundOverride: 'silent' };
+    const commands = alertsForEvents([{ type: 'phaseStarted', phase: work }], DEFAULT_ALERT_SETTINGS);
+    expect(commands.some((c) => c.type === 'sound')).toBe(false);
+    expect(commands.some((c) => c.type === 'haptic')).toBe(true);
+  });
+
+  it('a sobrescrita não afeta contagem regressiva', () => {
+    const work = { ...phase('work'), soundOverride: 'horn' };
+    expect(
+      sounds(DEFAULT_ALERT_SETTINGS, [{ type: 'countdown', secondsLeft: 2, phase: work }]),
+    ).toEqual(['countdown:beep']);
+  });
+});
+
+describe('narração por voz', () => {
+  const voice = { ...DEFAULT_ALERT_SETTINGS, voiceEnabled: true };
+  const speech = (settings: AlertSettings, events: Parameters<typeof alertsForEvents>[0]) =>
+    alertsForEvents(events, settings)
+      .filter((c) => c.type === 'speak')
+      .map((c) => (c.type === 'speak' ? c.text : ''));
+
+  it('desligada por padrão', () => {
+    expect(speech(DEFAULT_ALERT_SETTINGS, [{ type: 'phaseStarted', phase: phase('work') }])).toEqual(
+      [],
+    );
+  });
+
+  it('anuncia exercício, descanso com próximo e fim', () => {
+    const work = { ...phase('work'), label: 'Burpee' };
+    const rest = { ...phase('rest'), nextWorkLabel: 'Agachamento' };
+    expect(
+      speech(voice, [
+        { type: 'phaseStarted', phase: work },
+        { type: 'phaseStarted', phase: rest },
+        { type: 'halfway', phase: work },
+        { type: 'finished', stoppedEarly: false },
+      ]),
+    ).toEqual(['Vai! Burpee.', 'Descanso. Próximo: Agachamento.', 'Metade.', 'Treino concluído!']);
+  });
+
+  it('sem "anunciar próximo" omite o próximo exercício', () => {
+    const rest = { ...phase('rest'), nextWorkLabel: 'Agachamento' };
+    expect(speech({ ...voice, announceNext: false }, [{ type: 'phaseStarted', phase: rest }])).toEqual(
+      ['Descanso.'],
+    );
+  });
+
+  it('usa o idioma configurado e não fala a contagem', () => {
+    const commands = alertsForEvents(
+      [
+        { type: 'phaseStarted', phase: phase('cooldown') },
+        { type: 'countdown', secondsLeft: 3, phase: phase('work') },
+      ],
+      { ...voice, voiceLang: 'en-US' },
+    );
+    expect(commands.filter((c) => c.type === 'speak')).toEqual([
+      { type: 'speak', text: 'Desaquecimento.', lang: 'en-US' },
+    ]);
   });
 });

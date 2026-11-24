@@ -1,0 +1,277 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, StyleSheet, Switch, View } from 'react-native';
+
+import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { IconButton } from '@/components/ui/icon-button';
+import { Screen } from '@/components/ui/screen';
+import { Stepper } from '@/components/ui/stepper';
+import { Spacing } from '@/constants/theme';
+import {
+  ALERT_SLOT_LABELS,
+  ALERT_SLOTS,
+  DEFAULT_ALERT_SETTINGS,
+  type AlertSettings,
+  type AlertSlot,
+} from '@/domain/alerts';
+import {
+  applySoundConfig,
+  COUNTDOWN_MAX,
+  emptySoundConfig,
+  resolveAlertSettings,
+  type SoundConfig,
+} from '@/domain/soundConfig';
+import { soundName } from '@/domain/sounds';
+import { useTheme } from '@/hooks/use-theme';
+import { useServices } from '@/providers/services-provider';
+
+import { SoundPickerModal } from './sound-picker-modal';
+import { SoundRow } from './sound-row';
+import { useSoundLibrary } from './use-sound-library';
+
+export type SoundScope = { type: 'global' } | { type: 'workout'; workoutId: string };
+
+type BoolField = 'hapticsEnabled' | 'halfwayAlert' | 'voiceEnabled' | 'announceNext' | 'duckMusic';
+
+const SWITCHES: { field: BoolField; label: string }[] = [
+  { field: 'hapticsEnabled', label: 'Vibração' },
+  { field: 'halfwayAlert', label: 'Aviso na metade do trabalho' },
+  { field: 'voiceEnabled', label: 'Narração por voz' },
+  { field: 'announceNext', label: 'Anunciar próximo exercício' },
+  { field: 'duckMusic', label: 'Abaixar a música de outros apps' },
+];
+
+function SwitchRow({
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <View style={styles.rowBetween}>
+      <ThemedText type="small" style={styles.flex}>
+        {label}
+      </ThemedText>
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        disabled={disabled}
+        onValueChange={onChange}
+      />
+    </View>
+  );
+}
+
+export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
+  const theme = useTheme();
+  const { soundService, alertPlayer } = useServices();
+  const { library, reload } = useSoundLibrary();
+  const [config, setConfig] = useState<SoundConfig | null>(null);
+  const [base, setBase] = useState<AlertSettings>(DEFAULT_ALERT_SETTINGS);
+  const [loaded, setLoaded] = useState(false);
+  const [picking, setPicking] = useState<AlertSlot | null>(null);
+
+  const [version, setVersion] = useState(0);
+  const load = useCallback(() => setVersion((v) => v + 1), []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const global = await soundService.globalConfig();
+      const own =
+        scope.type === 'global' ? global : await soundService.workoutConfig(scope.workoutId);
+      if (!active) return;
+      setBase(scope.type === 'global' ? DEFAULT_ALERT_SETTINGS : resolveAlertSettings(global));
+      setConfig(own);
+      setLoaded(true);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [scope, soundService, version]);
+
+  const settings = useMemo(() => applySoundConfig(base, config), [base, config]);
+
+  const update = (changes: Partial<SoundConfig>) => {
+    if (!config) return;
+    const next = { ...config, ...changes };
+    setConfig(next);
+    void soundService.saveConfig(next);
+  };
+
+  const setSound = (slot: AlertSlot, soundId: string | null) => {
+    if (!config) return;
+    update({ sounds: { ...config.sounds, [slot]: soundId } });
+  };
+
+  const togglePersonalize = async (on: boolean) => {
+    if (scope.type !== 'workout') return;
+    if (on) setConfig(await soundService.personalizeWorkout(scope.workoutId));
+    else {
+      await soundService.useGlobalForWorkout(scope.workoutId);
+      setConfig(null);
+    }
+  };
+
+  const importSound = async () => {
+    const result = await soundService.importSound();
+    if (result.status === 'rejected') Alert.alert('Não foi possível importar', result.reason);
+    if (result.status === 'imported') {
+      reload();
+      Alert.alert('Som importado', `"${result.sound.name}" já pode ser usado nos treinos.`);
+    }
+  };
+
+  const confirmRemove = (id: string, name: string) =>
+    Alert.alert('Remover som?', `Onde "${name}" era usado, volta o som padrão.`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          await soundService.removeSound(id);
+          reload();
+          load();
+        },
+      },
+    ]);
+
+  const title = scope.type === 'global' ? 'Sons globais' : 'Sons do treino';
+  if (!loaded) return <Screen title={title}>{null}</Screen>;
+
+  const editable = config !== null;
+  const userSounds = library.filter((s) => s.source === 'user');
+
+  return (
+    <Screen title={title} scroll>
+      {scope.type === 'workout' ? (
+        <Card>
+          <SwitchRow
+            label="Personalizar sons deste treino"
+            value={editable}
+            onChange={(on) => void togglePersonalize(on)}
+          />
+          {!editable ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              Usando os sons globais. Ative para escolher sons só para este treino.
+            </ThemedText>
+          ) : null}
+        </Card>
+      ) : null}
+
+      <Card>
+        <ThemedText type="smallBold">Sons por momento</ThemedText>
+        {ALERT_SLOTS.map((slot) => (
+          <SoundRow
+            key={slot}
+            label={ALERT_SLOT_LABELS[slot]}
+            value={soundName(settings.sounds[slot], library)}
+            inherited={!config || config.sounds[slot] === null}
+            onPress={() => (editable ? setPicking(slot) : undefined)}
+            onPreview={
+              settings.sounds[slot]
+                ? () => alertPlayer.preview(settings.sounds[slot]!, settings.volume)
+                : undefined
+            }
+          />
+        ))}
+      </Card>
+
+      <Card>
+        <Stepper
+          label="Volume dos alertas"
+          format="count"
+          suffix="%"
+          step={10}
+          min={0}
+          max={100}
+          value={Math.round(settings.volume * 100)}
+          onChange={(v) => editable && update({ volume: v / 100 })}
+        />
+        <Stepper
+          label="Bipes antes da troca"
+          format="count"
+          suffix="s"
+          step={1}
+          min={0}
+          max={COUNTDOWN_MAX}
+          value={settings.countdownFrom}
+          onChange={(v) => editable && update({ countdownFrom: v })}
+        />
+        {SWITCHES.map(({ field, label }) => (
+          <SwitchRow
+            key={field}
+            label={label}
+            value={settings[field]}
+            disabled={!editable}
+            onChange={(v) => update({ [field]: v })}
+          />
+        ))}
+      </Card>
+
+      {editable ? (
+        <Button
+          title="Restaurar padrão"
+          variant="ghost"
+          onPress={() => config && update(emptySoundConfig(config.id, config.name))}
+        />
+      ) : null}
+
+      <Card>
+        <ThemedText type="smallBold">Meus sons</ThemedText>
+        {userSounds.length === 0 ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            Importe arquivos de áudio curtos (mp3, wav, m4a — até 1 MB).
+          </ThemedText>
+        ) : (
+          userSounds.map((s) => (
+            <View key={s.id} style={styles.rowBetween}>
+              <ThemedText type="small" style={styles.flex}>
+                {s.name}
+              </ThemedText>
+              <IconButton glyph="▶" label={`Ouvir ${s.name}`} onPress={() => alertPlayer.preview(s.id)} />
+              <IconButton
+                glyph="✕"
+                label={`Remover ${s.name}`}
+                color={theme.danger}
+                onPress={() => confirmRemove(s.id, s.name)}
+              />
+            </View>
+          ))
+        )}
+        <Button title="Importar som" variant="secondary" onPress={importSound} />
+      </Card>
+
+      <SoundPickerModal
+        visible={picking !== null}
+        title={picking ? ALERT_SLOT_LABELS[picking] : ''}
+        library={library}
+        selected={picking && config ? config.sounds[picking] : null}
+        inheritLabel={
+          picking
+            ? `Padrão (${soundName(base.sounds[picking], library)})`
+            : undefined
+        }
+        onSelect={(id) => picking && setSound(picking, id)}
+        onClose={() => setPicking(null)}
+      />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+    minHeight: 44,
+  },
+  flex: { flex: 1 },
+});

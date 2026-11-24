@@ -84,6 +84,30 @@ describe('WorkoutEditorScreen — novo treino', () => {
   });
 });
 
+describe('WorkoutEditorScreen — sons por exercício', () => {
+  beforeEach(resetRouterMock);
+
+  it('escolhe um som de início do trabalho só para o 3º exercício', async () => {
+    const services = await createTestServices();
+    const saved = await services.workoutsStore.getState().save(planExampleWorkout());
+    await renderWithServices(<WorkoutEditorScreen workoutId={saved.id} />, services);
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Editar Prancha' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Início do trabalho: Som do treino (padrão)' }),
+    );
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Gongo' }));
+    expect(screen.getByRole('button', { name: 'Início do trabalho: Gongo' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Concluir' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
+    const items = (await services.workouts.getById(saved.id))!.cycles[0].items;
+    expect(items[2].workSoundId).toBe('gong');
+    expect(items.filter((i) => i.workSoundId !== null)).toHaveLength(1);
+  });
+});
+
 describe('WorkoutEditorScreen — editar', () => {
   beforeEach(resetRouterMock);
 

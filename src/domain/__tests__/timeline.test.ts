@@ -77,6 +77,17 @@ describe('compileTimeline', () => {
     expect(kinds(workout)).toEqual(['work:10', 'work:10', 'work:10']);
   });
 
+  it('leva o som de cada exercício para as fases de trabalho e descanso', () => {
+    const workout = planExampleWorkout();
+    workout.cycles[0].items[2] = { ...workout.cycles[0].items[2], workSoundId: 'horn', restSoundId: 'silent' };
+    const { phases } = compileTimeline(workout);
+    const prancha = phases.findIndex((p) => p.label === 'Prancha');
+    expect(phases[prancha].soundOverride).toBe('horn');
+    expect(phases[prancha + 1]).toMatchObject({ kind: 'rest', soundOverride: 'silent' });
+    expect(phases[0].soundOverride).toBeNull();
+    expect(phases[1].soundOverride).toBeNull();
+  });
+
   it('treino vazio gera timeline vazia', () => {
     expect(compileTimeline(createWorkout({ cycles: [] }))).toEqual({ phases: [], totalMs: 0 });
   });

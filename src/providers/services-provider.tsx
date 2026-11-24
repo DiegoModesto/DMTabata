@@ -37,6 +37,7 @@ export function ServicesProvider({
         await seed(db);
         const created = createServices(db, createOverrides?.());
         await created.authStore.getState().restore();
+        await created.soundService.registerUserSources();
         if (!cancelled) setServices(created);
       } catch (error) {
         onError?.(error);

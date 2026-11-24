@@ -154,6 +154,14 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
           style={styles.flex}
           onPress={() => router.push(`/workout/${workout.id}/edit`)}
         />
+        <Button
+          title="Sons"
+          variant="secondary"
+          style={styles.flex}
+          onPress={() => router.push(`/workout/${workout.id}/sounds`)}
+        />
+      </View>
+      <View style={styles.actions}>
         <Button title="Excluir" variant="ghost" style={styles.flex} onPress={confirmDelete} />
       </View>
     </Screen>

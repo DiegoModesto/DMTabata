@@ -34,7 +34,7 @@ export type EditorAction =
       type: 'updateItem';
       cycleId: string;
       itemId: string;
-      changes: Partial<Pick<CycleItem, 'label' | 'workSec' | 'restSec'>>;
+      changes: Partial<Pick<CycleItem, 'label' | 'workSec' | 'restSec' | 'workSoundId' | 'restSoundId'>>;
     }
   | { type: 'resetItemTimes'; cycleId: string; itemId: string }
   | { type: 'removeItem'; cycleId: string; itemId: string }
@@ -182,6 +182,10 @@ export function editorReducer(workout: Workout, action: EditorAction): Workout {
               changes.restSec !== undefined
                 ? overrideValue(changes.restSec, cycle.defaultRestSec, 0)
                 : item.restSec,
+            workSoundId:
+              changes.workSoundId !== undefined ? changes.workSoundId : item.workSoundId,
+            restSoundId:
+              changes.restSoundId !== undefined ? changes.restSoundId : item.restSoundId,
           };
         }),
       }));

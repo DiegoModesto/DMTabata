@@ -92,14 +92,49 @@ describe('assertMigrationsAreValid', () => {
 });
 
 describe('seed', () => {
-  it('cria a configuração global de sons e pode rodar várias vezes', async () => {
+  it('cria a configuração global (herdando tudo) e pode rodar várias vezes', async () => {
     const db = createTestDatabase();
     await migrate(db);
     await seed(db);
     await seed(db);
-    const rows = await db.getAllAsync<{ id: string; countdown_from: number }>(
+    const rows = await db.getAllAsync<{ id: string; countdown_from: number | null }>(
       'SELECT id, countdown_from FROM sound_configs',
     );
-    expect(rows).toEqual([{ id: GLOBAL_SOUND_CONFIG_ID, countdown_from: 3 }]);
+    expect(rows).toEqual([{ id: GLOBAL_SOUND_CONFIG_ID, countdown_from: null }]);
+  });
+
+  it('registra os 10 sons embutidos e o "silencioso"', async () => {
+    const db = createTestDatabase();
+    await migrate(db);
+    await seed(db);
+    await seed(db);
+    const rows = await db.getAllAsync<{ id: string; source: string }>('SELECT id, source FROM sounds');
+    expect(rows).toHaveLength(11);
+    expect(rows.every((r) => r.source === 'builtin')).toBe(true);
+    expect(rows.map((r) => r.id)).toEqual(expect.arrayContaining(['silent', 'go', 'rest', 'beep']));
+  });
+});
+
+describe('migração 2', () => {
+  it('adiciona sons por exercício e o som de metade', async () => {
+    const db = createTestDatabase();
+    await migrate(db);
+    const itemCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(cycle_items)');
+    expect(itemCols.map((c) => c.name)).toEqual(
+      expect.arrayContaining(['work_sound_id', 'rest_sound_id']),
+    );
+    const cfgCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sound_configs)');
+    expect(cfgCols.map((c) => c.name)).toContain('halfway_sound_id');
+  });
+
+  it('atualiza um banco que estava na versão 1 sem perder dados', async () => {
+    const db = createTestDatabase();
+    await migrate(db, migrations.slice(0, 1));
+    await db.runAsync(
+      "INSERT INTO workouts (id, name, created_at, updated_at) VALUES ('w1', 'Antigo', 0, 0)",
+    );
+    expect(await migrate(db)).toEqual([2]);
+    const row = await db.getFirstAsync<{ name: string }>("SELECT name FROM workouts WHERE id = 'w1'");
+    expect(row?.name).toBe('Antigo');
   });
 });
