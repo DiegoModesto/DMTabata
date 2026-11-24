@@ -4,9 +4,13 @@ import { useCallback, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { ServicesProvider, useAuth } from '@/providers/services-provider';
+import { createExpoAlertPlayer } from '@/services/audio/expoAlertPlayer';
+import type { ServiceOverrides } from '@/services/container';
 import { openAppDatabase } from '@/services/db/expoDatabase';
 
 SplashScreen.preventAutoHideAsync();
+
+const createOverrides = (): ServiceOverrides => ({ alertPlayer: createExpoAlertPlayer() });
 
 function RootNavigator() {
   const status = useAuth((s) => s.status);
@@ -23,6 +27,13 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="workout/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="workout/[id]/index" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="workout/[id]/edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="player/[id]"
+          options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+        />
       </Stack.Protected>
     </Stack>
   );
@@ -37,7 +48,10 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <ServicesProvider openDatabase={openAppDatabase} onError={handleError}>
+      <ServicesProvider
+        openDatabase={openAppDatabase}
+        createOverrides={createOverrides}
+        onError={handleError}>
         <RootNavigator />
       </ServicesProvider>
     </ThemeProvider>

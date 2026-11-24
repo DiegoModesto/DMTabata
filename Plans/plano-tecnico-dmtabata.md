@@ -385,9 +385,9 @@ Abas inferiores (após login):  [ Treinos ]  [ Estatísticas ]  [ Configuraçõe
 │ Tempo total: 12min20s                     │
 └───────────────────────────────────────────┘
 ```
-- **Ciclos:** adicionar, renomear, duplicar, remover, reordenar (drag & drop), definir repetições.
+- **Ciclos:** adicionar, renomear, duplicar, remover, reordenar (botões ↑/↓ — mais acessível que drag & drop; implementado na Fase 1), definir repetições.
 - **Tempo padrão do ciclo:** trabalho e descanso aplicados a todos os exercícios do ciclo.
-- **Atalho "criar N exercícios"**: ex.: "5 exercícios de 30s com 10s de descanso" gera os itens de uma vez.
+- **Atalho "criar N exercícios"**: stepper "Exercícios" no ciclo — com os tempos padrão, "5 exercícios de 30s com 10s de descanso" sai em 3 toques.
 - **Exercício individual:** tocar abre um bottom sheet com nome (do catálogo ou texto livre), **tempo de trabalho** e **tempo de descanso** próprios, e (opcional) sons específicos. Itens com tempo sobrescrito exibem ✎ e o botão "voltar ao padrão".
 - Seletor de tempo: botões −5s / +5s e entrada mm:ss.
 - **Recalcula em tempo real** o tempo de cada ciclo e o total.
