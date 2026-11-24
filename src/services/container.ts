@@ -33,6 +33,9 @@ const unavailableImporter: SoundImporter = {
   persist: async () => {
     throw new Error('Importação de sons indisponível.');
   },
+  persistFile: async () => {
+    throw new Error('Gravação de sons indisponível.');
+  },
   remove: async () => {},
 };
 

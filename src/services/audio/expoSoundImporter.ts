@@ -4,6 +4,14 @@ import type { PickedSound, SoundImporter } from './soundImporter';
 
 const soundsDir = () => new Directory(Paths.document, 'sounds');
 
+function prepareDestination(soundId: string, extension: string): File {
+  const dir = soundsDir();
+  if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
+  const destination = new File(dir, `${soundId}.${extension}`);
+  if (destination.exists) destination.delete();
+  return destination;
+}
+
 export function createExpoSoundImporter(): SoundImporter {
   return {
     async pick() {
@@ -14,11 +22,14 @@ export function createExpoSoundImporter(): SoundImporter {
     },
 
     async persist(picked: PickedSound, soundId: string, extension: string) {
-      const dir = soundsDir();
-      if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
-      const destination = new File(dir, `${soundId}.${extension}`);
-      if (destination.exists) destination.delete();
+      const destination = prepareDestination(soundId, extension);
       await (picked.handle as File).copy(destination);
+      return destination.uri;
+    },
+
+    async persistFile(sourceUri: string, soundId: string, extension: string) {
+      const destination = prepareDestination(soundId, extension);
+      await new File(sourceUri).copy(destination);
       return destination.uri;
     },
 

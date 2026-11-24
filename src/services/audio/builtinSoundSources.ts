@@ -12,4 +12,13 @@ export const BUILTIN_SOUND_SOURCES: Record<BuiltinSoundId, number> = {
   gong: require('@/assets/sounds/gong.wav'),
   horn: require('@/assets/sounds/horn.wav'),
   finish: require('@/assets/sounds/finish.wav'),
+  'ring-bell': require('@/assets/sounds/ring-bell.wav'),
+  'ring-bell-3': require('@/assets/sounds/ring-bell-3.wav'),
+  clapper: require('@/assets/sounds/clapper.wav'),
+  tick: require('@/assets/sounds/tick.wav'),
+  'start-321': require('@/assets/sounds/start-321.wav'),
+  alarm: require('@/assets/sounds/alarm.wav'),
+  siren: require('@/assets/sounds/siren.wav'),
+  buzzer: require('@/assets/sounds/buzzer.wav'),
+  chime: require('@/assets/sounds/chime.wav'),
 };

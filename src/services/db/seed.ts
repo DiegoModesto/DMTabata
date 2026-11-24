@@ -16,7 +16,7 @@ export async function seed(db: SqlDatabase): Promise<void> {
     for (const [index, sound] of sounds.entries()) {
       await db.runAsync(
         `INSERT INTO sounds (id, name, source, uri, created_at) VALUES (?, ?, 'builtin', ?, ?)
-         ON CONFLICT(id) DO UPDATE SET name = excluded.name`,
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name, created_at = excluded.created_at`,
         [sound.id, sound.name, `builtin:${sound.id}`, index],
       );
     }

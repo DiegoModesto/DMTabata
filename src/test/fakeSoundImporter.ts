@@ -4,7 +4,7 @@ import type { PickedSound, SoundImporter } from '@/services/audio/soundImporter'
 export function createFakeSoundImporter() {
   const state = {
     nextPick: null as PickedSound | null,
-    stored: new Map<string, PickedSound>(),
+    stored: new Map<string, PickedSound | { sourceUri: string }>(),
     removed: [] as string[],
     failPersist: false,
   };
@@ -16,6 +16,12 @@ export function createFakeSoundImporter() {
       if (state.failPersist) throw new Error('disco cheio');
       const uri = `file:///sounds/${soundId}.${extension}`;
       state.stored.set(uri, picked);
+      return uri;
+    },
+    async persistFile(sourceUri, soundId, extension) {
+      if (state.failPersist) throw new Error('disco cheio');
+      const uri = `file:///sounds/${soundId}.${extension}`;
+      state.stored.set(uri, { sourceUri });
       return uri;
     },
     async remove(uri) {

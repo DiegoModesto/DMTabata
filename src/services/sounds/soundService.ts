@@ -1,10 +1,12 @@
 import { createId } from '@/domain/id';
+import { emptySoundConfig, resolveAlertSettings, type SoundConfig } from '@/domain/soundConfig';
 import {
-  emptySoundConfig,
-  resolveAlertSettings,
-  type SoundConfig,
-} from '@/domain/soundConfig';
-import { checkImport, type SoundEntry } from '@/domain/sounds';
+  checkImport,
+  checkRecording,
+  recordingExtension,
+  recordingName,
+  type SoundEntry,
+} from '@/domain/sounds';
 import type { AlertSettings } from '@/domain/alerts';
 import type { Workout } from '@/domain/workout';
 import type { AlertPlayer } from '@/services/audio/alertPlayer';
@@ -18,6 +20,9 @@ export type ImportResult =
   | { status: 'imported'; sound: SoundEntry }
   | { status: 'rejected'; reason: string }
   | { status: 'canceled' };
+
+export type SaveRecordingResult =
+  { status: 'saved'; sound: SoundEntry } | { status: 'rejected'; reason: string };
 
 /** Regras de negócio de sons: biblioteca, importação e configurações em camadas. */
 export function createSoundService(deps: {
@@ -63,6 +68,44 @@ export function createSoundService(deps: {
         throw error;
       }
     },
+
+    /**
+     * Salva uma gravação do microfone (até 3 s) como som do usuário.
+     * O arquivo temporário do gravador é sempre descartado.
+     */
+    async saveRecording(input: {
+      uri: string;
+      durationMs: number;
+      sizeBytes: number | null;
+      name: string;
+      suggestedName: string;
+    }): Promise<SaveRecordingResult> {
+      const check = checkRecording(input);
+      if (!check.ok) {
+        await importer.remove(input.uri);
+        return { status: 'rejected', reason: check.reason };
+      }
+      const id = createId();
+      let uri: string | null = null;
+      try {
+        uri = await importer.persistFile(input.uri, id, recordingExtension(input.uri));
+        const sound = await sounds.addUserSound({
+          id,
+          name: recordingName(input.name, input.suggestedName),
+          uri,
+        });
+        alertPlayer.registerSources({ [id]: uri });
+        return { status: 'saved', sound };
+      } catch (error) {
+        if (uri) await importer.remove(uri);
+        throw error;
+      } finally {
+        await importer.remove(input.uri);
+      }
+    },
+
+    /** Descarta uma gravação que o usuário não quis salvar. */
+    discardRecording: (uri: string) => importer.remove(uri),
 
     async renameSound(id: string, name: string): Promise<void> {
       const trimmed = name.trim();

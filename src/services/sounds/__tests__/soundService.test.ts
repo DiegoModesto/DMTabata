@@ -61,7 +61,10 @@ describe('soundService — configurações em camadas', () => {
     const { soundService, workout } = await setup();
     expect(await soundService.workoutConfig(workout.id)).toBeNull();
     const global = await soundService.globalConfig();
-    await soundService.saveConfig({ ...global, sounds: { ...global.sounds, workStart: 'whistle' } });
+    await soundService.saveConfig({
+      ...global,
+      sounds: { ...global.sounds, workStart: 'whistle' },
+    });
     const settings = await soundService.settingsForWorkout(workout);
     expect(settings.sounds.workStart).toBe('whistle');
   });
@@ -69,7 +72,11 @@ describe('soundService — configurações em camadas', () => {
   it('personalizar cria configuração própria que sobrescreve a global', async () => {
     const { soundService, workouts, workout } = await setup();
     const global = await soundService.globalConfig();
-    await soundService.saveConfig({ ...global, sounds: { ...global.sounds, workStart: 'whistle' }, volume: 0.5 });
+    await soundService.saveConfig({
+      ...global,
+      sounds: { ...global.sounds, workStart: 'whistle' },
+      volume: 0.5,
+    });
 
     const own = await soundService.personalizeWorkout(workout.id);
     expect(await soundService.personalizeWorkout(workout.id)).toEqual(own); // idempotente
@@ -89,5 +96,98 @@ describe('soundService — configurações em camadas', () => {
     expect((await workouts.getById(workout.id))!.soundConfigId).toBeNull();
     expect(await soundConfigs.getById(own.id)).toBeNull();
     expect(await soundConfigs.getById(GLOBAL_SOUND_CONFIG_ID)).not.toBeNull();
+  });
+});
+
+describe('soundService — gravação pelo microfone', () => {
+  const temp = 'file:///cache/recording-123.m4a';
+
+  it('salva a gravação como som do usuário, registra no player e apaga o temporário', async () => {
+    const { soundService, fake, alertPlayer } = await setup();
+    const result = await soundService.saveRecording({
+      uri: temp,
+      durationMs: 2400,
+      sizeBytes: 40_000,
+      name: '  Grito  ',
+      suggestedName: 'Gravação 1',
+    });
+    expect(result.status).toBe('saved');
+    if (result.status !== 'saved') return;
+    expect(result.sound).toMatchObject({ name: 'Grito', source: 'user' });
+    expect(result.sound.uri).toBe(`file:///sounds/${result.sound.id}.m4a`);
+    expect(fake.state.stored.get(result.sound.uri)).toEqual({ sourceUri: temp });
+    expect(fake.state.removed).toEqual([temp]);
+    expect(alertPlayer.sources[result.sound.id]).toBe(result.sound.uri);
+    expect((await soundService.library()).at(-1)?.id).toBe(result.sound.id);
+  });
+
+  it('sem nome digitado usa o nome sugerido', async () => {
+    const { soundService } = await setup();
+    const result = await soundService.saveRecording({
+      uri: temp,
+      durationMs: 900,
+      sizeBytes: null,
+      name: '',
+      suggestedName: 'Gravação 2',
+    });
+    expect(result).toMatchObject({ status: 'saved', sound: { name: 'Gravação 2' } });
+  });
+
+  it('rejeita gravação acima de 3 s ou curta demais e descarta o arquivo', async () => {
+    const { soundService, fake } = await setup();
+    const base = { uri: temp, sizeBytes: 10, name: '', suggestedName: 'G' };
+    expect(await soundService.saveRecording({ ...base, durationMs: 5000 })).toMatchObject({
+      status: 'rejected',
+    });
+    expect(await soundService.saveRecording({ ...base, durationMs: 50 })).toMatchObject({
+      status: 'rejected',
+    });
+    expect(fake.state.stored.size).toBe(0);
+    expect(fake.state.removed).toEqual([temp, temp]);
+    expect((await soundService.library()).some((s) => s.source === 'user')).toBe(false);
+  });
+
+  it('falha ao copiar: nada é salvo e o temporário é apagado', async () => {
+    const { soundService, fake } = await setup();
+    fake.state.failPersist = true;
+    await expect(
+      soundService.saveRecording({
+        uri: temp,
+        durationMs: 1000,
+        sizeBytes: 10,
+        name: 'x',
+        suggestedName: 'G',
+      }),
+    ).rejects.toThrow('disco cheio');
+    expect(fake.state.removed).toEqual([temp]);
+    expect((await soundService.library()).some((s) => s.source === 'user')).toBe(false);
+  });
+
+  it('gravação salva pode ser usada num momento do treino e removida depois', async () => {
+    const { soundService, workout } = await setup();
+    const result = await soundService.saveRecording({
+      uri: temp,
+      durationMs: 1000,
+      sizeBytes: 10,
+      name: 'Vai!',
+      suggestedName: 'G',
+    });
+    if (result.status !== 'saved') throw new Error('esperava salvar');
+    const global = await soundService.globalConfig();
+    await soundService.saveConfig({
+      ...global,
+      sounds: { ...global.sounds, workStart: result.sound.id },
+    });
+    expect((await soundService.settingsForWorkout(workout)).sounds.workStart).toBe(result.sound.id);
+    await soundService.removeSound(result.sound.id);
+    expect((await soundService.settingsForWorkout(workout)).sounds.workStart).not.toBe(
+      result.sound.id,
+    );
+  });
+
+  it('descartar gravação apaga o arquivo temporário', async () => {
+    const { soundService, fake } = await setup();
+    await soundService.discardRecording(temp);
+    expect(fake.state.removed).toEqual([temp]);
   });
 });

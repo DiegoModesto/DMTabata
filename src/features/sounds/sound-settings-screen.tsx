@@ -22,10 +22,11 @@ import {
   resolveAlertSettings,
   type SoundConfig,
 } from '@/domain/soundConfig';
-import { soundName } from '@/domain/sounds';
+import { nextRecordingName, soundName } from '@/domain/sounds';
 import { useTheme } from '@/hooks/use-theme';
 import { useServices } from '@/providers/services-provider';
 
+import { RecordSoundModal } from './record-sound-modal';
 import { SoundPickerModal } from './sound-picker-modal';
 import { SoundRow } from './sound-row';
 import { useSoundLibrary } from './use-sound-library';
@@ -76,6 +77,7 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
   const [base, setBase] = useState<AlertSettings>(DEFAULT_ALERT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [picking, setPicking] = useState<AlertSlot | null>(null);
+  const [recording, setRecording] = useState(false);
 
   const [version, setVersion] = useState(0);
   const load = useCallback(() => setVersion((v) => v + 1), []);
@@ -227,7 +229,8 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
         <ThemedText type="smallBold">Meus sons</ThemedText>
         {userSounds.length === 0 ? (
           <ThemedText type="small" themeColor="textSecondary">
-            Importe arquivos de áudio curtos (mp3, wav, m4a — até 1 MB).
+            Grave um som de até 3 segundos ou importe arquivos de áudio curtos (mp3, wav, m4a — até
+            1 MB).
           </ThemedText>
         ) : (
           userSounds.map((s) => (
@@ -235,7 +238,11 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
               <ThemedText type="small" style={styles.flex}>
                 {s.name}
               </ThemedText>
-              <IconButton glyph="▶" label={`Ouvir ${s.name}`} onPress={() => alertPlayer.preview(s.id)} />
+              <IconButton
+                glyph="▶"
+                label={`Ouvir ${s.name}`}
+                onPress={() => alertPlayer.preview(s.id)}
+              />
               <IconButton
                 glyph="✕"
                 label={`Remover ${s.name}`}
@@ -245,19 +252,39 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
             </View>
           ))
         )}
-        <Button title="Importar som" variant="secondary" onPress={importSound} />
+        <View style={styles.buttons}>
+          <Button
+            title="● Gravar som"
+            variant="secondary"
+            onPress={() => setRecording(true)}
+            style={styles.flex}
+          />
+          <Button
+            title="Importar som"
+            variant="secondary"
+            onPress={importSound}
+            style={styles.flex}
+          />
+        </View>
       </Card>
+
+      <RecordSoundModal
+        visible={recording}
+        suggestedName={nextRecordingName(library)}
+        onClose={() => setRecording(false)}
+        onSaved={(sound) => {
+          setRecording(false);
+          reload();
+          Alert.alert('Som gravado', `"${sound.name}" já pode ser usado nos treinos.`);
+        }}
+      />
 
       <SoundPickerModal
         visible={picking !== null}
         title={picking ? ALERT_SLOT_LABELS[picking] : ''}
         library={library}
         selected={picking && config ? config.sounds[picking] : null}
-        inheritLabel={
-          picking
-            ? `Padrão (${soundName(base.sounds[picking], library)})`
-            : undefined
-        }
+        inheritLabel={picking ? `Padrão (${soundName(base.sounds[picking], library)})` : undefined}
         onSelect={(id) => picking && setSound(picking, id)}
         onClose={() => setPicking(null)}
       />
@@ -274,4 +301,5 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   flex: { flex: 1 },
+  buttons: { flexDirection: 'row', gap: Spacing.two },
 });
