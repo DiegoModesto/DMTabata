@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -6,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Stepper } from '@/components/ui/stepper';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
+import { SoundPickerModal } from '@/features/sounds/sound-picker-modal';
+import { SoundRow } from '@/features/sounds/sound-row';
+import { useSoundLibrary } from '@/features/sounds/use-sound-library';
+import { soundName } from '@/domain/sounds';
 import type { EditorAction } from '@/domain/workoutEditor';
 import {
   effectiveRestSec,
@@ -24,9 +29,15 @@ type Props = {
 };
 
 /** Edição de um exercício: nome e tempos próprios (sobrescrevendo o padrão do ciclo). */
+type SoundField = 'workSoundId' | 'restSoundId';
+
 export function ItemEditorModal({ cycle, item, dispatch, onClose }: Props) {
+  const { library } = useSoundLibrary();
+  const [picking, setPicking] = useState<SoundField | null>(null);
   if (!item) return null;
-  const update = (changes: Partial<Pick<CycleItem, 'label' | 'workSec' | 'restSec'>>) =>
+  const update = (
+    changes: Partial<Pick<CycleItem, 'label' | 'workSec' | 'restSec' | SoundField>>,
+  ) =>
     dispatch({ type: 'updateItem', cycleId: cycle.id, itemId: item.id, changes });
 
   return (
@@ -59,6 +70,19 @@ export function ItemEditorModal({ cycle, item, dispatch, onClose }: Props) {
             Padrão do ciclo: {cycle.defaultWorkSec}s de trabalho / {cycle.defaultRestSec}s de
             descanso.
           </ThemedText>
+          <ThemedText type="smallBold">Sons deste exercício</ThemedText>
+          <SoundRow
+            label="Início do trabalho"
+            value={item.workSoundId ? soundName(item.workSoundId, library) : 'Som do treino'}
+            inherited={item.workSoundId === null}
+            onPress={() => setPicking('workSoundId')}
+          />
+          <SoundRow
+            label="Início do descanso"
+            value={item.restSoundId ? soundName(item.restSoundId, library) : 'Som do treino'}
+            inherited={item.restSoundId === null}
+            onPress={() => setPicking('restSoundId')}
+          />
           {isItemOverridden(item) ? (
             <Button
               title="Voltar ao padrão do ciclo"
@@ -79,6 +103,15 @@ export function ItemEditorModal({ cycle, item, dispatch, onClose }: Props) {
           />
           <Button title="Concluir" onPress={onClose} />
         </ThemedView>
+        <SoundPickerModal
+          visible={picking !== null}
+          title={picking === 'workSoundId' ? 'Início do trabalho' : 'Início do descanso'}
+          library={library}
+          selected={picking ? item[picking] : null}
+          inheritLabel="Som do treino (padrão)"
+          onSelect={(id) => picking && update({ [picking]: id })}
+          onClose={() => setPicking(null)}
+        />
       </View>
     </Modal>
   );

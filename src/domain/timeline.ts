@@ -19,6 +19,8 @@ export type Phase = {
   totalRepeats: number;
   /** Próximo exercício a ser feito (para "Próximo: X"). */
   nextWorkLabel: string | null;
+  /** Som específico do exercício para o início desta fase (sobrescreve a configuração). */
+  soundOverride: string | null;
 };
 
 export type Timeline = {
@@ -26,7 +28,9 @@ export type Timeline = {
   totalMs: number;
 };
 
-type Draft = Omit<Phase, 'index' | 'startOffsetMs' | 'nextWorkLabel'>;
+type Draft = Omit<Phase, 'index' | 'startOffsetMs' | 'nextWorkLabel' | 'soundOverride'> & {
+  soundOverride?: string | null;
+};
 
 /**
  * "Compila" um treino em uma lista linear de fases com início/duração absolutos.
@@ -70,12 +74,14 @@ export function compileTimeline(workout: Workout): Timeline {
           kind: 'work',
           durationMs: effectiveWorkSec(cycle, item) * 1000,
           label: item.label,
+          soundOverride: item.workSoundId,
           ...shared,
         });
         drafts.push({
           kind: 'rest',
           durationMs: restAfterItem(cycle, i, r) * 1000,
           label: 'Descanso',
+          soundOverride: item.restSoundId,
           ...shared,
         });
       });
@@ -110,7 +116,13 @@ export function compileTimeline(workout: Workout): Timeline {
   const kept = drafts.filter((d) => d.durationMs > 0);
   let offset = 0;
   const phases: Phase[] = kept.map((d, index) => {
-    const phase: Phase = { ...d, index, startOffsetMs: offset, nextWorkLabel: null };
+    const phase: Phase = {
+      ...d,
+      index,
+      startOffsetMs: offset,
+      nextWorkLabel: null,
+      soundOverride: d.soundOverride ?? null,
+    };
     offset += d.durationMs;
     return phase;
   });

@@ -25,18 +25,21 @@ describe('PlayerScreen — temporizador com sons', () => {
     }
   }
 
-  async function setup() {
+  async function setup(customize?: (services: Awaited<ReturnType<typeof createTestServices>>, workout: ReturnType<typeof planExampleWorkout>) => Promise<void>) {
     jest.useFakeTimers();
     now = 0;
     const alertPlayer = createSilentAlertPlayer();
     const services = await createTestServices({ alertPlayer, clock });
     const workout = planExampleWorkout();
     await services.workouts.save(workout, null);
+    await customize?.(services, workout);
     await renderWithServices(<PlayerScreen workoutId={workout.id} />, services);
     await screen.findByText('PREPARAR');
     const sounds = () =>
       alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.slot : ''));
-    return { alertPlayer, sounds };
+    const soundIds = () =>
+      alertPlayer.executed.filter((c) => c.type === 'sound').map((c) => (c.type === 'sound' ? c.soundId : ''));
+    return { alertPlayer, sounds, soundIds };
   }
 
   beforeEach(resetRouterMock);
@@ -92,6 +95,37 @@ describe('PlayerScreen — temporizador com sons', () => {
     expect(sounds().filter((s) => s === 'workoutEnd')).toHaveLength(1);
     await fireEvent.press(screen.getByRole('button', { name: 'Concluir' }));
     expect(mockRouter.back).toHaveBeenCalled();
+  });
+
+  it('usa os sons configurados: treino, exercício e pré-carregamento', async () => {
+    const { soundIds, alertPlayer } = await setup(async (services, workout) => {
+      const own = await services.soundService.personalizeWorkout(workout.id);
+      await services.soundService.saveConfig({
+        ...own,
+        sounds: { ...own.sounds, workStart: 'whistle', countdown: 'silent' },
+        duckMusic: false,
+      });
+      workout.cycles[0].items[1] = { ...workout.cycles[0].items[1], workSoundId: 'gong' };
+      await services.workouts.save({ ...workout, soundConfigId: own.id }, null);
+    });
+    await advance(10_000 + 40_000 + 100);
+    expect(soundIds()).toEqual(['whistle', 'rest', 'gong']);
+    expect(alertPlayer.prepared).toEqual(expect.arrayContaining(['whistle', 'gong', 'rest']));
+    expect(alertPlayer.prepared).not.toContain('silent');
+    expect(alertPlayer.options).toEqual({ duckMusic: false });
+  });
+
+  it('narração por voz quando habilitada', async () => {
+    const { alertPlayer } = await setup(async (services) => {
+      const global = await services.soundService.globalConfig();
+      await services.soundService.saveConfig({ ...global, voiceEnabled: true });
+    });
+    await advance(10_000);
+    const speech = alertPlayer.executed.filter((c) => c.type === 'speak');
+    expect(speech).toEqual([
+      { type: 'speak', text: 'Prepare-se. Próximo: Polichinelo.', lang: 'pt-BR' },
+      { type: 'speak', text: 'Vai! Polichinelo.', lang: 'pt-BR' },
+    ]);
   });
 
   it('parar pede confirmação e encerra como interrompido', async () => {

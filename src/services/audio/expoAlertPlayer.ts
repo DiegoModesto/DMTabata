@@ -1,17 +1,12 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
 
 import type { AlertCommand, HapticStyle, SoundId } from '@/domain/alerts';
+import { isBuiltinSoundId } from '@/domain/sounds';
 
-import type { AlertPlayer } from './alertPlayer';
-import { isBuiltinSoundId } from './builtinSounds';
+import type { AlertPlayer, AudioOptions } from './alertPlayer';
 import { BUILTIN_SOUND_SOURCES } from './builtinSoundSources';
-
-/** Resolve a origem de um som: embutido (asset) ou arquivo do usuário (uri). */
-export type SoundSourceResolver = (soundId: SoundId) => number | string | null;
-
-export const resolveBuiltinSource: SoundSourceResolver = (id) =>
-  isBuiltinSoundId(id) ? BUILTIN_SOUND_SOURCES[id] : null;
 
 function playHaptic(style: HapticStyle) {
   const run = () => {
@@ -31,21 +26,27 @@ function playHaptic(style: HapticStyle) {
   run()?.catch(() => {});
 }
 
-export function createExpoAlertPlayer(
-  resolveSource: SoundSourceResolver = resolveBuiltinSource,
-): AlertPlayer {
+export function createExpoAlertPlayer(): AlertPlayer {
   const players = new Map<SoundId, AudioPlayer>();
-  let audioModeSet = false;
+  const userSources: Record<SoundId, string> = {};
+  let currentMode: AudioOptions | null = null;
 
-  async function ensureAudioMode() {
-    if (audioModeSet) return;
-    audioModeSet = true;
+  async function applyAudioMode(options: AudioOptions = { duckMusic: true }) {
+    if (currentMode?.duckMusic === options.duckMusic) return;
+    currentMode = options;
     try {
-      // Toca no modo silencioso e abaixa (não pausa) a música de outros apps.
-      await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'duckOthers' });
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        interruptionMode: options.duckMusic ? 'duckOthers' : 'mixWithOthers',
+      });
     } catch {
-      audioModeSet = false;
+      currentMode = null;
     }
+  }
+
+  function resolveSource(soundId: SoundId): number | string | null {
+    if (isBuiltinSoundId(soundId)) return BUILTIN_SOUND_SOURCES[soundId];
+    return userSources[soundId] ?? null;
   }
 
   function getPlayer(soundId: SoundId): AudioPlayer | null {
@@ -69,21 +70,31 @@ export function createExpoAlertPlayer(
   }
 
   return {
-    async prepare(soundIds) {
-      await ensureAudioMode();
+    registerSources(sources) {
+      for (const [id, uri] of Object.entries(sources)) {
+        if (userSources[id] !== uri) {
+          players.get(id)?.remove();
+          players.delete(id);
+        }
+        userSources[id] = uri;
+      }
+    },
+    async prepare(soundIds, options) {
+      await applyAudioMode(options);
       soundIds.forEach((id) => getPlayer(id));
     },
     execute(commands: AlertCommand[]) {
-      void ensureAudioMode();
       for (const command of commands) {
         if (command.type === 'sound') play(command.soundId, command.volume);
-        else playHaptic(command.style);
+        else if (command.type === 'haptic') playHaptic(command.style);
+        else Speech.speak(command.text, { language: command.lang, useApplicationAudioSession: true });
       }
     },
     preview(soundId, volume = 1) {
-      void ensureAudioMode().then(() => play(soundId, volume));
+      void applyAudioMode(currentMode ?? undefined).then(() => play(soundId, volume));
     },
     release() {
+      void Speech.stop();
       players.forEach((p) => p.remove());
       players.clear();
     },

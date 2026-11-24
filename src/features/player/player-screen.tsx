@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { PhaseColors, Spacing } from '@/constants/theme';
-import { DEFAULT_ALERT_SETTINGS, type AlertSettings } from '@/domain/alerts';
+import type { AlertSettings } from '@/domain/alerts';
 import { formatClock, formatDuration, msToDisplaySeconds } from '@/domain/format';
 import { compileTimeline, type PhaseKind } from '@/domain/timeline';
 import type { Workout } from '@/domain/workout';
@@ -141,16 +141,23 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
 
 export function PlayerScreen({ workoutId }: { workoutId: string }) {
   const router = useRouter();
-  const { workouts } = useServices();
+  const { workouts, soundService } = useServices();
   const [workout, setWorkout] = useState<Workout | null | undefined>(undefined);
+  const [settings, setSettings] = useState<AlertSettings | null>(null);
 
   useEffect(() => {
     let active = true;
-    workouts.getById(workoutId).then((w) => active && setWorkout(w));
+    (async () => {
+      const w = await workouts.getById(workoutId);
+      const s = w ? await soundService.settingsForWorkout(w) : null;
+      if (!active) return;
+      setSettings(s);
+      setWorkout(w);
+    })();
     return () => {
       active = false;
     };
-  }, [workoutId, workouts]);
+  }, [workoutId, workouts, soundService]);
 
   if (workout === undefined) return <Screen>{null}</Screen>;
   if (workout === null) {
@@ -160,7 +167,7 @@ export function PlayerScreen({ workoutId }: { workoutId: string }) {
       </Screen>
     );
   }
-  return <PlayerView workout={workout} settings={DEFAULT_ALERT_SETTINGS} />;
+  return settings ? <PlayerView workout={workout} settings={settings} /> : null;
 }
 
 const styles = StyleSheet.create({

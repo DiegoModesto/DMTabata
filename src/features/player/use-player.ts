@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { ALERT_SLOTS, type AlertSettings } from '@/domain/alerts';
+import type { AlertSettings } from '@/domain/alerts';
+import { soundsInUse } from '@/domain/soundConfig';
 import type { Timeline } from '@/domain/timeline';
 import {
   createTimerController,
@@ -38,11 +39,11 @@ export function usePlayer(
   }, [controller, settings]);
 
   useEffect(() => {
-    const ids = ALERT_SLOTS.map((slot) => settings.sounds[slot]).filter(
-      (id): id is string => !!id,
-    );
-    void alertPlayer.prepare(ids);
-  }, [alertPlayer, settings]);
+    const overrides = timeline.phases.map((p) => p.soundOverride);
+    void alertPlayer.prepare(soundsInUse(settings, overrides), { duckMusic: settings.duckMusic });
+  }, [alertPlayer, settings, timeline]);
+
+  useEffect(() => () => alertPlayer.release(), [alertPlayer]);
 
   useEffect(() => {
     const handle = setInterval(() => apply(controller.update(clock())), TICK_MS);

@@ -2,12 +2,17 @@ import { createId } from './id';
 
 export type WorkoutType = 'tabata' | 'hiit' | 'emom' | 'amrap' | 'circuit' | 'custom';
 
-/** Exercício dentro de um ciclo. `null` em workSec/restSec = herda o padrão do ciclo. */
+/**
+ * Exercício dentro de um ciclo. `null` em workSec/restSec = herda o padrão do ciclo;
+ * `null` em workSoundId/restSoundId = usa o som do treino/global.
+ */
 export type CycleItem = {
   id: string;
   label: string;
   workSec: number | null;
   restSec: number | null;
+  workSoundId: string | null;
+  restSoundId: string | null;
 };
 
 export type Cycle = {
@@ -66,6 +71,9 @@ export const effectiveRestSec = (cycle: Cycle, item: CycleItem): number =>
 
 export const isItemOverridden = (item: CycleItem): boolean =>
   item.workSec !== null || item.restSec !== null;
+
+export const hasItemSounds = (item: CycleItem): boolean =>
+  item.workSoundId !== null || item.restSoundId !== null;
 
 /**
  * Descanso efetivo após o item `itemIndex` na repetição `repeatIndex` (0-based).
@@ -132,7 +140,15 @@ export function workoutTotals(workout: Workout): WorkoutTotals {
 // ---------- Fábricas ----------
 
 export function createItem(label: string, overrides: Partial<CycleItem> = {}): CycleItem {
-  return { id: createId(), label, workSec: null, restSec: null, ...overrides };
+  return {
+    id: createId(),
+    label,
+    workSec: null,
+    restSec: null,
+    workSoundId: null,
+    restSoundId: null,
+    ...overrides,
+  };
 }
 
 export function createCycle(

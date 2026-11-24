@@ -35,6 +35,8 @@ type ItemRow = {
   label: string | null;
   work_sec: number | null;
   rest_sec: number | null;
+  work_sound_id: string | null;
+  rest_sound_id: string | null;
 };
 
 export type WorkoutSummary = {
@@ -67,6 +69,8 @@ function assemble(row: WorkoutRow, cycleRows: CycleRow[], itemRows: ItemRow[]): 
           label: i.label ?? '',
           workSec: i.work_sec,
           restSec: i.rest_sec,
+          workSoundId: i.work_sound_id,
+          restSoundId: i.rest_sound_id,
         })),
     }));
 
@@ -181,9 +185,19 @@ export function createWorkoutRepository(db: SqlDatabase, now: () => number = Dat
           );
           for (const [itemPosition, item] of cycle.items.entries()) {
             await db.runAsync(
-              `INSERT INTO cycle_items (id, cycle_id, position, label, work_sec, rest_sec)
-               VALUES (?, ?, ?, ?, ?, ?)`,
-              [item.id, cycle.id, itemPosition, item.label.trim(), item.workSec, item.restSec],
+              `INSERT INTO cycle_items (id, cycle_id, position, label, work_sec, rest_sec,
+                 work_sound_id, rest_sound_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                item.id,
+                cycle.id,
+                itemPosition,
+                item.label.trim(),
+                item.workSec,
+                item.restSec,
+                item.workSoundId,
+                item.restSoundId,
+              ],
             );
           }
         }
@@ -191,8 +205,22 @@ export function createWorkoutRepository(db: SqlDatabase, now: () => number = Dat
       return saved;
     },
 
+    /** Remove o treino (ciclos/itens em cascata) e sua configuração de sons própria. */
     async remove(id: string): Promise<void> {
-      await db.runAsync('DELETE FROM workouts WHERE id = ?', [id]);
+      await db.withTransactionAsync(async () => {
+        const row = await db.getFirstAsync<{ sound_config_id: string | null }>(
+          'SELECT sound_config_id FROM workouts WHERE id = ?',
+          [id],
+        );
+        await db.runAsync('DELETE FROM workouts WHERE id = ?', [id]);
+        if (row?.sound_config_id && row.sound_config_id !== 'global') {
+          await db.runAsync('DELETE FROM sound_configs WHERE id = ?', [row.sound_config_id]);
+        }
+      });
+    },
+
+    async setSoundConfig(id: string, soundConfigId: string | null): Promise<void> {
+      await db.runAsync('UPDATE workouts SET sound_config_id = ? WHERE id = ?', [soundConfigId, id]);
     },
 
     async setFavorite(id: string, favorite: boolean): Promise<void> {

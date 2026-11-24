@@ -143,4 +143,16 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: 'sons por exercício e som de metade',
+    sql: `
+      ALTER TABLE sound_configs ADD COLUMN halfway_sound_id TEXT
+        REFERENCES sounds(id) ON DELETE SET NULL;
+      ALTER TABLE cycle_items ADD COLUMN work_sound_id TEXT
+        REFERENCES sounds(id) ON DELETE SET NULL;
+      ALTER TABLE cycle_items ADD COLUMN rest_sound_id TEXT
+        REFERENCES sounds(id) ON DELETE SET NULL;
+    `,
+  },
 ];

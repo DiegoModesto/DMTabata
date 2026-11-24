@@ -80,6 +80,25 @@ describe('editorReducer — tempos por exercício', () => {
     expect(next.cycles[0].items[1].workSec).toBe(LIMITS.maxPhaseSec);
   });
 
+  it('define e remove sons específicos do exercício', () => {
+    const w = planExampleWorkout();
+    const { id: cycleId, items } = w.cycles[0];
+    let next = editorReducer(w, {
+      type: 'updateItem',
+      cycleId,
+      itemId: items[2].id,
+      changes: { workSoundId: 'horn', restSoundId: 'silent' },
+    });
+    expect(next.cycles[0].items[2]).toMatchObject({ workSoundId: 'horn', restSoundId: 'silent', workSec: 60 });
+    next = editorReducer(next, {
+      type: 'updateItem',
+      cycleId,
+      itemId: items[2].id,
+      changes: { workSoundId: null },
+    });
+    expect(next.cycles[0].items[2]).toMatchObject({ workSoundId: null, restSoundId: 'silent' });
+  });
+
   it('renomear exercício mantém os tempos', () => {
     const w = planExampleWorkout();
     const { id: cycleId, items } = w.cycles[0];

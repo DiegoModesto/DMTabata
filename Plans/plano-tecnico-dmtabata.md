@@ -312,7 +312,8 @@ Extras para v1.1: **Live Activity** (iOS) e notificação com cronômetro (Andro
 ### 6.2.1 Troca de sons
 - Para cada evento (**início do trabalho**, **início do descanso**, contagem regressiva, fim do ciclo, fim do treino) o usuário escolhe um som da biblioteca.
 - **Biblioteca embutida** (v1): bipe, bipe duplo, apito, sino, gongo, buzina, palmas, "silencioso".
-- **Sons do usuário**: importar arquivo (`expo-document-picker`), copiado para o diretório do app (`expo-file-system`), limite de ~5 s / 1 MB, formatos mp3/wav/m4a. Renomear e excluir.
+- **Sons do usuário**: importar arquivo (`File.pickFileAsync` do `expo-file-system`, sem dependência extra), copiado para o diretório do app, limite de 1 MB, formatos mp3/wav/m4a/aac/caf. Excluir faz quem usava o som voltar ao padrão.
+- **"Silencioso" × "herdar"**: `null` herda da camada anterior; o id `silent` desliga o som explicitamente.
 - Botão ▶︎ de **pré-escuta** ao lado de cada opção.
 - Observação: notificações em background no iOS só tocam sons empacotados no app (≤ 30 s). Sons importados pelo usuário tocam normalmente com o app ativo ou em modo áudio-em-background; no fallback por notificação, usa-se o som embutido mais próximo.
 
