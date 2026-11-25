@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { PhaseColors, Spacing } from '@/constants/theme';
 import { formatClock, formatDuration } from '@/domain/format';
+import { soundName } from '@/domain/sounds';
 import { compileTimeline } from '@/domain/timeline';
 import {
   effectiveRestSec,
@@ -20,6 +21,7 @@ import {
 } from '@/domain/workout';
 import { useTheme } from '@/hooks/use-theme';
 import { formatAverage, formatDate } from '@/features/stats/format';
+import { useSoundLibrary } from '@/features/sounds/use-sound-library';
 import type { StatsSummary } from '@/domain/stats';
 import { useServices } from '@/providers/services-provider';
 
@@ -31,6 +33,7 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
   const [history, setHistory] = useState<StatsSummary | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const { library: sounds } = useSoundLibrary();
 
   useFocusEffect(
     useCallback(() => {
@@ -170,9 +173,18 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
                   const rest = restAfterItem(cycle, i, cycle.repeatCount - 1);
                   return (
                     <View key={item.id} style={styles.itemRow}>
-                      <ThemedText type="small" style={styles.flex}>
-                        {i + 1}. {item.label}
-                      </ThemedText>
+                      <View style={styles.flex}>
+                        <ThemedText type="small">
+                          {i + 1}. {item.label}
+                        </ThemedText>
+                        {item.workSoundId ? (
+                          <ThemedText
+                            type="small"
+                            style={[styles.itemSound, { color: theme.primary }]}>
+                            ♪ {soundName(item.workSoundId, sounds)}
+                          </ThemedText>
+                        ) : null}
+                      </View>
                       <ThemedText
                         type="small"
                         style={isItemOverridden(item) ? { color: theme.primary } : undefined}>
@@ -230,6 +242,7 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
 }
 
 const styles = StyleSheet.create({
+  itemSound: { fontSize: 12, lineHeight: 16 },
   total: { fontVariant: ['tabular-nums'] },
   legend: { flexDirection: 'row', gap: Spacing.three, flexWrap: 'wrap' },
   start: { minHeight: 56 },

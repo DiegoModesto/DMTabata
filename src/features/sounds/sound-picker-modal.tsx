@@ -1,4 +1,5 @@
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -6,8 +7,16 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Spacing } from '@/constants/theme';
 import { SILENT_SOUND_ID } from '@/domain/alerts';
-import { groupSounds, SILENT_SOUND_NAME, type SoundEntry } from '@/domain/sounds';
+import {
+  groupSounds,
+  nextRecordingName,
+  SILENT_SOUND_NAME,
+  type SoundEntry,
+} from '@/domain/sounds';
 import { useTheme } from '@/hooks/use-theme';
+import { useServices } from '@/providers/services-provider';
+
+import { RecordSoundModal } from './record-sound-modal';
 
 import { previewButton, useSoundPreview } from './use-sound-preview';
 
@@ -26,6 +35,11 @@ type Props = {
   hideSilent?: boolean;
   onSelect: (soundId: string | null) => void;
   onClose: () => void;
+  /**
+   * Mostra "Gravar som" e "Importar som" no seletor: o som novo entra na biblioteca
+   * e já fica escolhido. Chamado depois para a tela recarregar a biblioteca.
+   */
+  onLibraryChange?: () => void;
 };
 
 /** Lista de sons com pré-escuta (▶) e seleção. */
@@ -38,9 +52,12 @@ export function SoundPickerModal({
   hideSilent,
   onSelect,
   onClose,
+  onLibraryChange,
 }: Props) {
   const theme = useTheme();
   const preview = useSoundPreview();
+  const { soundService } = useServices();
+  const [recording, setRecording] = useState(false);
   const close = () => {
     preview.stop();
     onClose();
@@ -58,6 +75,20 @@ export function SoundPickerModal({
       options: group.sounds.map((s) => ({ id: s.id, name: s.name, playable: true })),
     })),
   ];
+
+  /** Som novo (gravado ou importado): entra na biblioteca e já fica escolhido. */
+  const pickNewSound = (sound: SoundEntry) => {
+    onLibraryChange?.();
+    onSelect(sound.id);
+    close();
+  };
+
+  const importSound = async () => {
+    preview.stop();
+    const result = await soundService.importSound();
+    if (result.status === 'rejected') Alert.alert('Não foi possível importar', result.reason);
+    if (result.status === 'imported') pickNewSound(result.sound);
+  };
 
   const renderOption = (item: Option) => {
     const isSelected = item.id === selected;
@@ -110,8 +141,40 @@ export function SoundPickerModal({
               </View>
             ))}
           </ScrollView>
+          {onLibraryChange ? (
+            <View style={styles.buttons}>
+              <Button
+                title="Gravar som"
+                icon="mic"
+                variant="secondary"
+                style={styles.flex}
+                onPress={() => {
+                  preview.stop();
+                  setRecording(true);
+                }}
+              />
+              <Button
+                title="Importar som"
+                icon="upload"
+                variant="secondary"
+                style={styles.flex}
+                onPress={() => void importSound()}
+              />
+            </View>
+          ) : null}
           <Button title="Fechar" variant="secondary" onPress={close} />
         </ThemedView>
+        {onLibraryChange ? (
+          <RecordSoundModal
+            visible={recording}
+            suggestedName={nextRecordingName(library)}
+            onClose={() => setRecording(false)}
+            onSaved={(sound) => {
+              setRecording(false);
+              pickNewSound(sound);
+            }}
+          />
+        ) : null}
       </View>
     </Modal>
   );
@@ -132,4 +195,6 @@ const styles = StyleSheet.create({
   option: { flex: 1, minHeight: 44, justifyContent: 'center' },
   section: { marginBottom: Spacing.two },
   sectionTitle: { marginTop: Spacing.two, letterSpacing: 1 },
+  buttons: { flexDirection: 'row', gap: Spacing.two },
+  flex: { flex: 1 },
 });

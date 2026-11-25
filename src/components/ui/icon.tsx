@@ -12,6 +12,7 @@ const ICONS = {
   unlock: { ios: 'lock.open.fill', android: 'lock_open', web: 'lock_open' },
   plus: { ios: 'plus', android: 'add', web: 'add' },
   minus: { ios: 'minus', android: 'remove', web: 'remove' },
+  sound: { ios: 'speaker.wave.2.fill', android: 'volume_up', web: 'volume_up' },
   mic: { ios: 'mic.fill', android: 'mic', web: 'mic' },
   share: { ios: 'square.and.arrow.up', android: 'share', web: 'share' },
   template: { ios: 'square.on.square', android: 'content_copy', web: 'content_copy' },
