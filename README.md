@@ -30,6 +30,7 @@ Aplicativo mobile de treinos intervalados — Tabata, HIIT, EMOM, AMRAP e circui
 | **Camadas** | Padrão do app → sons globais → sons do treino → som do exercício. Vazio herda; "Silencioso" desliga. |
 | **Catálogo embutido** | 37 sons em categorias: *Sinais de treino*, *Ringue e luta* (sino de ringue, fim de round, batida de aviso), *Alertas sonoros* e *Pacote pessoal*. |
 | **Meus sons** | Importar áudio (mp3, wav, m4a, aac, caf — até 1 MB) ou **gravar até 3 s** pelo microfone. |
+| **Som por exercício** | No editor, o botão de som (alto-falante) em cada exercício escolhe o som do início dele — da lista, **importando um arquivo** ou **gravando um clipe** ali mesmo. O som aparece com ♪ na lista e no detalhe do treino. Em *Editar exercício* também dá para trocar o som do descanso. |
 | **Sons surpresa** | Durante o trabalho, em momentos sorteados (20–60% da fase), toca um som aleatório da lista; chance por exercício configurável. Um novo interrompe o anterior. |
 | **Música de fundo** | Toca em loop no volume máximo e **abaixa enquanto qualquer outro áudio toca** (alertas, surpresas, voz). Pausa, retoma e para junto com o treino. |
 | **Segundos finais** | Bipes da contagem sempre no volume máximo, com a música abaixada até a fase seguinte. |

@@ -9,8 +9,7 @@ import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { SoundPickerModal } from '@/features/sounds/sound-picker-modal';
 import { SoundRow } from '@/features/sounds/sound-row';
-import { useSoundLibrary } from '@/features/sounds/use-sound-library';
-import { soundName } from '@/domain/sounds';
+import { soundName, type SoundEntry } from '@/domain/sounds';
 import type { EditorAction } from '@/domain/workoutEditor';
 import {
   effectiveRestSec,
@@ -26,19 +25,26 @@ type Props = {
   item: CycleItem | null;
   dispatch: (action: EditorAction) => void;
   onClose: () => void;
+  library: SoundEntry[];
+  onLibraryChange: () => void;
 };
 
-/** Edição de um exercício: nome e tempos próprios (sobrescrevendo o padrão do ciclo). */
 type SoundField = 'workSoundId' | 'restSoundId';
 
-export function ItemEditorModal({ cycle, item, dispatch, onClose }: Props) {
-  const { library } = useSoundLibrary();
+/** Edição de um exercício: nome, tempos e sons próprios (sobrescrevendo o padrão). */
+export function ItemEditorModal({
+  cycle,
+  item,
+  dispatch,
+  onClose,
+  library,
+  onLibraryChange,
+}: Props) {
   const [picking, setPicking] = useState<SoundField | null>(null);
   if (!item) return null;
   const update = (
     changes: Partial<Pick<CycleItem, 'label' | 'workSec' | 'restSec' | SoundField>>,
-  ) =>
-    dispatch({ type: 'updateItem', cycleId: cycle.id, itemId: item.id, changes });
+  ) => dispatch({ type: 'updateItem', cycleId: cycle.id, itemId: item.id, changes });
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
@@ -111,6 +117,7 @@ export function ItemEditorModal({ cycle, item, dispatch, onClose }: Props) {
           inheritLabel="Som do treino (padrão)"
           onSelect={(id) => picking && update({ [picking]: id })}
           onClose={() => setPicking(null)}
+          onLibraryChange={onLibraryChange}
         />
       </View>
     </Modal>

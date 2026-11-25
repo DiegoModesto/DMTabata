@@ -41,6 +41,16 @@ describe('WorkoutDetailScreen — pré-treino', () => {
     expect(screen.getByText('5. Abdominal')).toBeTruthy();
   });
 
+  it('mostra o som próprio de um exercício', async () => {
+    const services = await createTestServices();
+    const workout = planExampleWorkout();
+    workout.cycles[0].items[2].workSoundId = 'gong';
+    await services.workouts.save(workout, null);
+    await renderWithServices(<WorkoutDetailScreen workoutId={workout.id} />, services);
+    expect(await screen.findByText('♪ Gongo')).toBeTruthy();
+    expect(screen.getAllByText(/♪/)).toHaveLength(1);
+  });
+
   it('"Começar" abre o temporizador; "Editar" abre o editor', async () => {
     const workout = await setup();
     await fireEvent.press(await screen.findByRole('button', { name: '▶ Começar' }));

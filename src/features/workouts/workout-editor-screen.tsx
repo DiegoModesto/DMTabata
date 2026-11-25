@@ -12,6 +12,7 @@ import { Stepper } from '@/components/ui/stepper';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { formatDuration } from '@/domain/format';
+import { soundName, type SoundEntry } from '@/domain/sounds';
 import { validateWorkout } from '@/domain/validation';
 import { createFromTemplate } from '@/domain/templates';
 import {
@@ -27,6 +28,8 @@ import {
   type WorkoutType,
 } from '@/domain/workout';
 import { editorReducer, type EditorAction } from '@/domain/workoutEditor';
+import { SoundPickerModal } from '@/features/sounds/sound-picker-modal';
+import { useSoundLibrary } from '@/features/sounds/use-sound-library';
 import { useTheme } from '@/hooks/use-theme';
 import { useServices } from '@/providers/services-provider';
 
@@ -38,12 +41,16 @@ function CycleCard({
   total,
   dispatch,
   onEditItem,
+  onPickSound,
+  library,
 }: {
   cycle: Cycle;
   index: number;
   total: number;
   dispatch: (action: EditorAction) => void;
   onEditItem: (itemId: string) => void;
+  onPickSound: (itemId: string) => void;
+  library: SoundEntry[];
 }) {
   const theme = useTheme();
   const updateCycle = (changes: Extract<EditorAction, { type: 'updateCycle' }>['changes']) =>
@@ -128,19 +135,31 @@ function CycleCard({
         {cycle.items.map((item, i) => {
           const rest = restAfterItem(cycle, i, cycle.repeatCount - 1);
           const overridden = isItemOverridden(item);
+          const name = item.label || `exercício ${i + 1}`;
+          const ownSound = item.workSoundId ? soundName(item.workSoundId, library) : null;
           return (
             <ThemedView key={item.id} type="background" style={styles.itemRow}>
               <Pressable
                 style={styles.itemMain}
                 accessibilityRole="button"
-                accessibilityLabel={`Editar ${item.label || `exercício ${i + 1}`}`}
+                accessibilityLabel={`Editar ${name}`}
                 onPress={() => onEditItem(item.id)}>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.itemIndex}>
                   {i + 1}
                 </ThemedText>
-                <ThemedText type="small" style={styles.itemLabel} numberOfLines={1}>
-                  {item.label || '—'}
-                </ThemedText>
+                <View style={styles.itemLabel}>
+                  <ThemedText type="small" numberOfLines={1}>
+                    {item.label || '—'}
+                  </ThemedText>
+                  {ownSound ? (
+                    <ThemedText
+                      type="small"
+                      numberOfLines={1}
+                      style={[styles.itemSound, { color: theme.primary }]}>
+                      ♪ {ownSound}
+                    </ThemedText>
+                  ) : null}
+                </View>
                 <ThemedText
                   type="smallBold"
                   style={overridden ? { color: theme.primary } : undefined}>
@@ -149,6 +168,12 @@ function CycleCard({
                   {rest > 0 ? `${effectiveRestSec(cycle, item)}s` : '—'}
                 </ThemedText>
               </Pressable>
+              <IconButton
+                icon="sound"
+                label={`Som de ${name}`}
+                color={ownSound ? theme.primary : theme.textSecondary}
+                onPress={() => onPickSound(item.id)}
+              />
               <IconButton
                 glyph="↑"
                 label={`Mover ${item.label} para cima`}
@@ -196,6 +221,10 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
     initial ? JSON.stringify(initial) : null,
   );
   const [editing, setEditing] = useState<{ cycleId: string; itemId: string } | null>(null);
+  const [pickingSound, setPickingSound] = useState<{ cycleId: string; itemId: string } | null>(
+    null,
+  );
+  const { library, reload: reloadLibrary } = useSoundLibrary();
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const allowLeave = useRef(false);
@@ -252,6 +281,11 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
 
   const editingCycle = editing ? draft.cycles.find((c) => c.id === editing.cycleId) : undefined;
   const editingItem = editingCycle?.items.find((i) => i.id === editing?.itemId) ?? null;
+  const soundItem = pickingSound
+    ? draft.cycles
+        .find((c) => c.id === pickingSound.cycleId)
+        ?.items.find((i) => i.id === pickingSound.itemId)
+    : undefined;
 
   const save = async () => {
     const problems = validateWorkout(draft);
@@ -316,6 +350,8 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
           total={draft.cycles.length}
           dispatch={dispatch}
           onEditItem={(itemId) => setEditing({ cycleId: cycle.id, itemId })}
+          onPickSound={(itemId) => setPickingSound({ cycleId: cycle.id, itemId })}
+          library={library}
         />
       ))}
       <Button
@@ -353,8 +389,29 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
           item={editingItem}
           dispatch={dispatch}
           onClose={() => setEditing(null)}
+          library={library}
+          onLibraryChange={reloadLibrary}
         />
       ) : null}
+
+      <SoundPickerModal
+        visible={!!soundItem}
+        title={soundItem ? `Som de ${soundItem.label || 'exercício'}` : ''}
+        library={library}
+        selected={soundItem?.workSoundId ?? null}
+        inheritLabel="Som do treino (padrão)"
+        onSelect={(workSoundId) =>
+          pickingSound &&
+          dispatch({
+            type: 'updateItem',
+            cycleId: pickingSound.cycleId,
+            itemId: pickingSound.itemId,
+            changes: { workSoundId },
+          })
+        }
+        onClose={() => setPickingSound(null)}
+        onLibraryChange={reloadLibrary}
+      />
     </Screen>
   );
 }
@@ -383,5 +440,6 @@ const styles = StyleSheet.create({
   },
   itemIndex: { width: 20, textAlign: 'center' },
   itemLabel: { flex: 1 },
+  itemSound: { fontSize: 12, lineHeight: 16 },
   errors: { gap: Spacing.one },
 });
