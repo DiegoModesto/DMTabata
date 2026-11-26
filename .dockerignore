@@ -1,0 +1,17 @@
+node_modules
+dist
+web-build
+ios
+android
+.expo
+.git
+.maestro
+coverage
+Plans
+*.log
+.DS_Store
+.env
+.env.*
+Dockerfile
+.dockerignore
+docker-compose*.yml

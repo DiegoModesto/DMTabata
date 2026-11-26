@@ -6,7 +6,7 @@ export type PickedSound = {
   handle: unknown;
 };
 
-/** Seleção e armazenamento de sons importados. Implementação real: expo-file-system. */
+/** Seleção e armazenamento de sons importados. Implementações: expo-file-system (nativo) e Cache Storage (web). */
 export interface SoundImporter {
   pick(): Promise<PickedSound | null>;
   /** Copia o arquivo para o diretório do app e devolve a uri definitiva. */
@@ -14,6 +14,9 @@ export interface SoundImporter {
   /** Copia um arquivo já local (ex.: gravação temporária) para o diretório do app. */
   persistFile(sourceUri: string, soundId: string, extension: string): Promise<string>;
   remove(uri: string): Promise<void>;
-  /** Uri salva → uri válida agora (a pasta do app pode ter mudado de caminho). */
-  resolve(uri: string): string;
+  /**
+   * Uri salva → uri tocável agora (no iOS a pasta do app pode mudar de caminho;
+   * na web o arquivo vem do armazenamento local e vira uma `blob:` url).
+   */
+  resolve(uri: string): string | Promise<string>;
 }

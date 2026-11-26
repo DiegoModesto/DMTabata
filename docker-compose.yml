@@ -1,0 +1,39 @@
+# DMTabata web (PWA) na VPS, atrás do Traefik (mesmo padrão do diegomodesto.com.br).
+# No servidor: /opt/apps/dmtabata/docker-compose.yml
+#   docker compose pull && docker compose up -d --remove-orphans
+# O domínio pode ser trocado com DMTABATA_HOST no .env ao lado deste arquivo.
+
+services:
+  web:
+    image: diegosanches/dmtabata-web:latest
+    container_name: dmtabata-web
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_traefik"
+
+      # HTTPS
+      - "traefik.http.routers.dmtabata.rule=Host(`${DMTABATA_HOST:-tabata.diegomodesto.com.br}`)"
+      - "traefik.http.routers.dmtabata.entrypoints=websecure"
+      - "traefik.http.routers.dmtabata.tls=true"
+      - "traefik.http.routers.dmtabata.tls.certresolver=myresolver"
+      - "traefik.http.routers.dmtabata.middlewares=dmtabata-compress"
+
+      # HTTP -> HTTPS (PWA e service worker exigem HTTPS)
+      - "traefik.http.routers.dmtabata-http.rule=Host(`${DMTABATA_HOST:-tabata.diegomodesto.com.br}`)"
+      - "traefik.http.routers.dmtabata-http.entrypoints=web"
+      - "traefik.http.routers.dmtabata-http.middlewares=dmtabata-https-redirect"
+      - "traefik.http.middlewares.dmtabata-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.dmtabata-https-redirect.redirectscheme.permanent=true"
+
+      # Compressão (os cabeçalhos de segurança e COOP/COEP vêm do nginx do container)
+      - "traefik.http.middlewares.dmtabata-compress.compress=true"
+
+      - "traefik.http.services.dmtabata.loadbalancer.server.port=80"
+
+networks:
+  traefik:
+    name: traefik_traefik
+    external: true

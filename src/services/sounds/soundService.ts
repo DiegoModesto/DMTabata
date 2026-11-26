@@ -46,12 +46,17 @@ export function createSoundService(deps: {
 
     /** Disponibiliza os arquivos importados para o player de áudio. */
     async registerUserSources(): Promise<void> {
-      const list = await sounds.list();
-      alertPlayer.registerSources(
-        Object.fromEntries(
-          list.filter((s) => s.source === 'user').map((s) => [s.id, importer.resolve(s.uri)]),
-        ),
+      const list = (await sounds.list()).filter((s) => s.source === 'user');
+      const entries = await Promise.all(
+        list.map(async (s) => {
+          try {
+            return [[s.id, await importer.resolve(s.uri)] as const];
+          } catch {
+            return []; // arquivo sumiu do armazenamento: o som fica mudo, o resto segue
+          }
+        }),
       );
+      alertPlayer.registerSources(Object.fromEntries(entries.flat()));
     },
 
     async importSound(): Promise<ImportResult> {
@@ -63,7 +68,7 @@ export function createSoundService(deps: {
       const uri = await importer.persist(picked, id, check.extension);
       try {
         const sound = await sounds.addUserSound({ id, name: check.name, uri });
-        alertPlayer.registerSources({ [id]: uri });
+        alertPlayer.registerSources({ [id]: await importer.resolve(uri) });
         return { status: 'imported', sound };
       } catch (error) {
         await importer.remove(uri);
@@ -96,7 +101,7 @@ export function createSoundService(deps: {
           name: recordingName(input.name, input.suggestedName),
           uri,
         });
-        alertPlayer.registerSources({ [id]: uri });
+        alertPlayer.registerSources({ [id]: await importer.resolve(uri) });
         return { status: 'saved', sound };
       } catch (error) {
         if (uri) await importer.remove(uri);

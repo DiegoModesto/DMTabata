@@ -1,9 +1,10 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 import { detailHeaderOptions } from '@/components/navigation/detail-header';
+import { StartupErrorScreen } from '@/features/startup/startup-error-screen';
 import { useTheme } from '@/hooks/use-theme';
 import { ServicesProvider, useAuth } from '@/providers/services-provider';
 import { createExpoAlertPlayer } from '@/services/audio/expoAlertPlayer';
@@ -70,7 +71,14 @@ export default function RootLayout() {
       <ServicesProvider
         openDatabase={openAppDatabase}
         createOverrides={createOverrides}
-        onError={handleError}>
+        onError={handleError}
+        errorFallback={(error, retry) => (
+          <StartupErrorScreen
+            error={error}
+            // Na web, recarregar a página libera o banco de forma limpa.
+            onRetry={Platform.OS === 'web' ? () => window.location.reload() : retry}
+          />
+        )}>
         <RootNavigator />
       </ServicesProvider>
     </ThemeProvider>
