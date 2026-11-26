@@ -1,8 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { EmptyState } from '@/components/empty-state';
+import { showAlert } from '@/components/ui/app-dialog';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -72,7 +73,7 @@ export function WorkoutListScreen() {
 
   const openMenu = (workout: WorkoutSummary) => {
     const { duplicate, toggleFavorite, remove } = workoutsStore.getState();
-    Alert.alert(workout.name, undefined, [
+    showAlert(workout.name, undefined, [
       {
         text: workout.favorite ? 'Remover dos favoritos' : 'Favoritar',
         onPress: () => void toggleFavorite(workout.id),
@@ -82,7 +83,7 @@ export function WorkoutListScreen() {
         text: 'Excluir',
         style: 'destructive',
         onPress: () =>
-          Alert.alert('Excluir treino?', `"${workout.name}" será removido.`, [
+          showAlert('Excluir treino?', `"${workout.name}" será removido.`, [
             { text: 'Cancelar', style: 'cancel' },
             { text: 'Excluir', style: 'destructive', onPress: () => void remove(workout.id) },
           ]),
@@ -100,7 +101,11 @@ export function WorkoutListScreen() {
     <Screen
       title="Treinos"
       headerRight={
-        <Button title="+ Novo" onPress={() => router.push('/workout/templates')} style={styles.newBtn} />
+        <Button
+          title="+ Novo"
+          onPress={() => router.push('/workout/templates')}
+          style={styles.newBtn}
+        />
       }>
       {loaded && summaries.length === 0 ? (
         <EmptyState

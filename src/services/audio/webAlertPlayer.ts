@@ -59,6 +59,9 @@ const VIBRATION: Record<HapticStyle, number | number[]> = {
   warning: [40, 80, 40],
 };
 
+/** Tempo máximo que uma fala mantém a música abaixada. */
+export const SPEECH_DUCK_LIMIT_MS = 8000;
+
 type Voice = { source: SourceNodeLike; gain: GainNodeLike; stop(): void };
 
 export function createWebAlertPlayer(deps: WebAlertPlayerDeps): AlertPlayer {
@@ -129,7 +132,8 @@ export function createWebAlertPlayer(deps: WebAlertPlayerDeps): AlertPlayer {
       .then((decoded) => {
         if (finished) return;
         source.buffer = decoded;
-        if (audio.state === 'suspended') void audio.resume().catch(() => {});
+        // 'suspended' ou 'interrupted' (Safari do iPhone após ligação, fala ou tela bloqueada).
+        if (audio.state !== 'running') void audio.resume().catch(() => {});
         source.start(0, options.offset ?? 0);
         started = true;
       })
@@ -201,7 +205,7 @@ export function createWebAlertPlayer(deps: WebAlertPlayerDeps): AlertPlayer {
     },
     async prepare(soundIds) {
       const audio = ctx();
-      if (audio.state === 'suspended') await audio.resume().catch(() => {});
+      if (audio.state !== 'running') await audio.resume().catch(() => {});
       await Promise.all(soundIds.map((id) => load(id)?.catch(() => null)));
     },
     execute(commands: AlertCommand[]) {
@@ -245,7 +249,17 @@ export function createWebAlertPlayer(deps: WebAlertPlayerDeps): AlertPlayer {
         } else {
           const key = {};
           if (music) ducking.started(key);
-          deps.speak(command.text, command.lang, () => ducking.ended(key));
+          // O Safari às vezes não avisa o fim da fala: sem o limite, a música ficaria baixa.
+          let ended = false;
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const end = () => {
+            if (ended) return;
+            ended = true;
+            clearTimeout(timer);
+            ducking.ended(key);
+          };
+          timer = setTimeout(end, SPEECH_DUCK_LIMIT_MS);
+          deps.speak(command.text, command.lang, end);
         }
       }
     },

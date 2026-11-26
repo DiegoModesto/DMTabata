@@ -19,6 +19,16 @@ describe('describeStartupError', () => {
     });
   });
 
+  it('Safari em navegação privada pede para abrir numa aba normal', () => {
+    const error = new Error(
+      'The operation failed for an unknown transient reason (e.g. out of memory).',
+    );
+    expect(describeStartupError(error)).toMatchObject({
+      title: 'Abra fora da navegação privada',
+      canRetry: true,
+    });
+  });
+
   it('outros erros: mensagem genérica, com nova tentativa', () => {
     expect(describeStartupError('boom')).toMatchObject({
       title: 'Não foi possível abrir o app',

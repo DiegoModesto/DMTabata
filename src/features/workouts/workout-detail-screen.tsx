@@ -1,8 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { TimelineBar } from '@/components/timeline-bar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -70,26 +71,26 @@ export function WorkoutDetailScreen({ workoutId }: { workoutId: string }) {
     try {
       const { droppedSounds } = await library.shareWorkout(workout.id);
       if (droppedSounds > 0) {
-        Alert.alert(
+        showAlert(
           'Treino compartilhado',
           `${droppedSounds} som(ns) importado(s) por você não vão no arquivo — quem receber usa os sons padrão nesses momentos.`,
         );
       }
     } catch {
-      Alert.alert('Não foi possível compartilhar', 'Tente novamente.');
+      showAlert('Não foi possível compartilhar', 'Tente novamente.');
     }
   };
 
   const saveAsTemplate = async () => {
     const template = await library.saveAsTemplate(workout.id);
-    Alert.alert(
+    showAlert(
       'Modelo salvo',
       `"${template.name}" está em Novo treino → Meus modelos. Crie quantas cópias quiser a partir dele.`,
     );
   };
 
   const confirmDelete = () =>
-    Alert.alert('Excluir treino?', `"${workout.name}" será removido.`, [
+    showAlert('Excluir treino?', `"${workout.name}" será removido.`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',

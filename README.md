@@ -116,6 +116,7 @@ npm run web:preview  # serve dist/ em http://localhost:8081 com os mesmos cabeç
 
 **Limites da web**
 - **Uma aba por vez**: o banco abre em uma aba só. Numa segunda aba, o app explica e oferece "Tentar de novo".
+- **Sem navegação privada**: o Safari não deixa guardar o banco numa aba privada; o app avisa.
 - **Sem notificações de fase**: com o app em segundo plano ou a tela bloqueada, o navegador pode pausar o áudio. Para treinar de tela bloqueada, use o app nativo.
 - **Sem vibração no iPhone**: a web não tem vibração no iPhone; no Android usa `navigator.vibrate`.
 - **Navegadores**: precisa de um navegador recente com isolamento de origem (Safari 16.4+, Chrome, Edge, Firefox).
@@ -237,6 +238,7 @@ Cada fase ou melhoria é feita em uma branch própria, com testes unitários e d
 | #20 | Compartilhar treinos, salvar como modelo e treinos embutidos (Boxe Sequenciado) |
 | #21 | Som próprio em cada exercício, com importar e gravar direto do seletor |
 | #22 | PWA: app web instalável e offline, SQLite no navegador, Web Audio e deploy na VPS |
+| #23 | PWA: confirmações e avisos em diálogo próprio (o `Alert` não existe na web) e áudio que se recupera no iPhone |
 
 ## Licença
 

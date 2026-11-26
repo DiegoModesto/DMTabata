@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Alert, Linking, Modal, StyleSheet, View } from 'react-native';
+import { Linking, Modal, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
@@ -53,14 +54,14 @@ export function RecordSoundModal({ visible, suggestedName, onSaved, onClose }: P
       const result = await soundService.saveRecording({ ...recording, name, suggestedName });
       if (result.status === 'rejected') {
         recorder.reset();
-        Alert.alert('Não foi possível salvar', result.reason);
+        showAlert('Não foi possível salvar', result.reason);
         return;
       }
       recorder.reset();
       setName('');
       onSaved(result.sound);
     } catch {
-      Alert.alert('Não foi possível salvar', 'Tente gravar novamente.');
+      showAlert('Não foi possível salvar', 'Tente gravar novamente.');
     } finally {
       setSaving(false);
     }

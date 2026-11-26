@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
 import { detailHeaderOptions } from '@/components/navigation/detail-header';
+import { DialogHost } from '@/components/ui/app-dialog';
 import { StartupErrorScreen } from '@/features/startup/startup-error-screen';
 import { useTheme } from '@/hooks/use-theme';
 import { ServicesProvider, useAuth } from '@/providers/services-provider';
@@ -80,6 +81,7 @@ export default function RootLayout() {
           />
         )}>
         <RootNavigator />
+        <DialogHost />
       </ServicesProvider>
     </ThemeProvider>
   );

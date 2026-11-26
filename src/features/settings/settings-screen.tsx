@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
@@ -20,9 +21,9 @@ export function SettingsScreen() {
     setBusy('export');
     try {
       const count = await backupService.exportAll();
-      if (count === 0) Alert.alert('Nada para exportar', 'Crie um treino primeiro.');
+      if (count === 0) showAlert('Nada para exportar', 'Crie um treino primeiro.');
     } catch {
-      Alert.alert('Não foi possível exportar', 'Tente novamente.');
+      showAlert('Não foi possível exportar', 'Tente novamente.');
     } finally {
       setBusy(null);
     }
@@ -32,10 +33,10 @@ export function SettingsScreen() {
     setBusy('import');
     try {
       const result = await backupService.importFromFile();
-      if (result.status === 'error') Alert.alert('Não foi possível importar', result.reason);
+      if (result.status === 'error') showAlert('Não foi possível importar', result.reason);
       if (result.status === 'imported') {
         await workoutsStore.getState().load();
-        Alert.alert(
+        showAlert(
           'Treinos importados',
           `${result.imported} treino(s) importado(s)` +
             (result.skipped ? `, ${result.skipped} ignorado(s) por estarem inválidos.` : '.'),
@@ -53,11 +54,7 @@ export function SettingsScreen() {
         <ThemedText>{user?.displayName}</ThemedText>
         {user?.email ? <ThemedText themeColor="textSecondary">{user.email}</ThemedText> : null}
       </ThemedView>
-      <Button
-        title="Sons e alertas"
-        variant="secondary"
-        onPress={() => router.push('/sounds')}
-      />
+      <Button title="Sons e alertas" variant="secondary" onPress={() => router.push('/sounds')} />
       <ThemedView type="backgroundElement" style={styles.card}>
         <ThemedText type="smallBold">Backup</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
