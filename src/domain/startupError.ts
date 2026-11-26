@@ -16,6 +16,15 @@ export function describeStartupError(error: unknown): StartupProblem {
       canRetry: true,
     };
   }
+  // Safari em navegação privada não deixa abrir o armazenamento do site.
+  if (/unknown transient reason|UnknownError|SecurityError|QuotaExceeded/i.test(raw)) {
+    return {
+      title: 'Abra fora da navegação privada',
+      message:
+        'O navegador não deixou guardar os treinos no aparelho (isso acontece na navegação privada). Abra numa aba normal ou pelo ícone da Tela de Início.',
+      canRetry: true,
+    };
+  }
   if (/SharedArrayBuffer|crossOriginIsolated|OPFS|getDirectory/i.test(raw)) {
     return {
       title: 'Navegador sem suporte',

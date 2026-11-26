@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconButton } from '@/components/ui/icon-button';
@@ -86,7 +87,7 @@ export function TemplatePickerScreen() {
   };
 
   const removeTemplate = (t: LibraryTemplate) =>
-    Alert.alert('Remover modelo?', `"${t.name}" sai de Meus modelos. Seus treinos não mudam.`, [
+    showAlert('Remover modelo?', `"${t.name}" sai de Meus modelos. Seus treinos não mudam.`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Remover',
@@ -100,7 +101,7 @@ export function TemplatePickerScreen() {
 
   const importFile = async () => {
     const result = await library.importFromPicker();
-    if (result.status === 'error') Alert.alert('Não foi possível importar', result.reason);
+    if (result.status === 'error') showAlert('Não foi possível importar', result.reason);
     if (result.status === 'imported') await open(result.workout.id);
   };
 

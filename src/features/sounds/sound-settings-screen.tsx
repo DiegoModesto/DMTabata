@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconButton } from '@/components/ui/icon-button';
@@ -136,15 +137,15 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
 
   const importSound = async () => {
     const result = await soundService.importSound();
-    if (result.status === 'rejected') Alert.alert('Não foi possível importar', result.reason);
+    if (result.status === 'rejected') showAlert('Não foi possível importar', result.reason);
     if (result.status === 'imported') {
       reload();
-      Alert.alert('Som importado', `"${result.sound.name}" já pode ser usado nos treinos.`);
+      showAlert('Som importado', `"${result.sound.name}" já pode ser usado nos treinos.`);
     }
   };
 
   const confirmRemove = (id: string, name: string) =>
-    Alert.alert('Remover som?', `Onde "${name}" era usado, volta o som padrão.`, [
+    showAlert('Remover som?', `Onde "${name}" era usado, volta o som padrão.`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Remover',
@@ -333,7 +334,7 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
           title="Usar pacote pessoal"
           variant="secondary"
           onPress={() =>
-            Alert.alert(
+            showAlert(
               'Usar pacote pessoal?',
               'Aplica Vamo acordar na preparação, Corneta no trabalho, Campainha de boxe no descanso, Cabou no fim, os 12 sons surpresa e a música de fundo.',
               [
@@ -404,7 +405,7 @@ export function SoundSettingsScreen({ scope }: { scope: SoundScope }) {
         onSaved={(sound) => {
           setRecording(false);
           reload();
-          Alert.alert('Som gravado', `"${sound.name}" já pode ser usado nos treinos.`);
+          showAlert('Som gravado', `"${sound.name}" já pode ser usado nos treinos.`);
         }}
       />
 

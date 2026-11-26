@@ -1,10 +1,11 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { Button } from '@/components/ui/button';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Screen } from '@/components/ui/screen';
@@ -139,7 +140,7 @@ function PlayerView({ workout, settings }: { workout: Workout; settings: AlertSe
   const background = finished ? PhaseColors.finished : PhaseColors[phase?.kind ?? 'prepare'];
 
   const confirmStop = () =>
-    Alert.alert('Parar treino?', 'O progresso deste treino será encerrado.', [
+    showAlert('Parar treino?', 'O progresso deste treino será encerrado.', [
       { text: 'Continuar treinando', style: 'cancel' },
       { text: 'Parar', style: 'destructive', onPress: () => dispatch('stop') },
     ]);

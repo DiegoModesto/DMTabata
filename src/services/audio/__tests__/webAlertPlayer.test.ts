@@ -3,6 +3,7 @@ import type { SoundId } from '@/domain/alerts';
 import { MUSIC_DUCK_LEVEL } from '../musicDucking';
 import {
   createWebAlertPlayer,
+  SPEECH_DUCK_LIMIT_MS,
   type AudioContextLike,
   type GainNodeLike,
   type SourceNodeLike,
@@ -182,6 +183,32 @@ describe('webAlertPlayer (Web Audio)', () => {
     expect(context.sources[0].gain.gain.value).toBe(MUSIC_DUCK_LEVEL);
     spoken[0].done();
     expect(context.sources[0].gain.gain.value).toBe(1);
+  });
+
+  it('se o navegador não avisar o fim da fala, a música volta sozinha', async () => {
+    jest.useFakeTimers();
+    try {
+      const { player, context } = setup();
+      player.execute([{ type: 'music', action: 'start', soundId: 'song', volume: 1 }]);
+      await jest.advanceTimersByTimeAsync(0);
+      player.execute([{ type: 'speak', text: 'Descanso', lang: 'pt-BR' }]);
+      expect(context.sources[0].gain.gain.value).toBe(MUSIC_DUCK_LEVEL);
+      jest.advanceTimersByTime(SPEECH_DUCK_LIMIT_MS);
+      expect(context.sources[0].gain.gain.value).toBe(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('áudio travado pelo iPhone ("interrupted") é retomado ao tocar o próximo som', async () => {
+    const { player, context } = setup();
+    await player.prepare(['gong']);
+    context.state = 'interrupted';
+    player.execute([{ type: 'sound', soundId: 'gong', volume: 1, slot: 'workStart' }]);
+    await flush();
+    expect(context.state).toBe('running');
+    expect(context.resumes).toBe(2);
+    expect(context.sources[0].started).toBe(true);
   });
 
   it('vibração usa o padrão do estilo', () => {

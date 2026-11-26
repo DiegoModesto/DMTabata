@@ -1,8 +1,9 @@
 import { useNavigation, usePreventRemove, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -258,7 +259,7 @@ export function WorkoutEditorScreen({ workoutId, template = 'custom' }: Props) {
       navigation.dispatch(data.action);
       return;
     }
-    Alert.alert('Descartar alterações?', 'As mudanças não salvas serão perdidas.', [
+    showAlert('Descartar alterações?', 'As mudanças não salvas serão perdidas.', [
       { text: 'Continuar editando', style: 'cancel' },
       {
         text: 'Descartar',

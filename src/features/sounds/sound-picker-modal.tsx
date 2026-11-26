@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-dialog';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
@@ -86,7 +87,7 @@ export function SoundPickerModal({
   const importSound = async () => {
     preview.stop();
     const result = await soundService.importSound();
-    if (result.status === 'rejected') Alert.alert('Não foi possível importar', result.reason);
+    if (result.status === 'rejected') showAlert('Não foi possível importar', result.reason);
     if (result.status === 'imported') pickNewSound(result.sound);
   };
 
