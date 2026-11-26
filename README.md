@@ -4,7 +4,7 @@ Aplicativo mobile de treinos intervalados — Tabata, HIIT, EMOM, AMRAP e circui
 
 - **Plano técnico**: [`Plans/plano-tecnico-dmtabata.md`](Plans/plano-tecnico-dmtabata.md)
 - **Stack**: React Native 0.88 · Expo SDK 58 · TypeScript (strict) · Expo Router · SQLite (expo-sqlite) · Zustand
-- **Plataforma alvo**: iOS (testado em iPhone físico e simulador iOS 26); Android suportado pela base Expo
+- **Plataformas**: iOS (testado em iPhone físico e simulador iOS 26) e **web como PWA** (instalável, funciona offline); Android suportado pela base Expo
 
 ---
 
@@ -91,6 +91,50 @@ xcrun devicectl device install app --device <UDID> <caminho>/Release-iphoneos/DM
 - UDID do iPhone: `xcrun devicectl list devices`. Team ID: `security find-identity -v -p codesigning` (campo `OU` do certificado).
 
 Para distribuir via TestFlight/Play: conta de desenvolvedor paga, `npx eas-cli@latest build --profile production` e `npx eas-cli@latest submit`.
+
+---
+
+## PWA (web)
+
+O mesmo código gera o app web, instalável na tela inicial e funcionando **offline** depois da primeira visita.
+
+```bash
+npm run web          # desenvolvimento (Metro com os cabeçalhos COOP/COEP)
+npm run web:build    # build de produção em dist/ + service worker (dist/sw.js)
+npm run web:preview  # serve dist/ em http://localhost:8081 com os mesmos cabeçalhos do nginx
+```
+
+**Dados locais no navegador**
+- **Treinos, histórico e configurações**: o mesmo SQLite do iPhone (expo-sqlite em WebAssembly, gravado no OPFS do navegador), com as mesmas migrações.
+- **Sons importados e gravados**: ficam no Cache Storage do navegador (`dmtabata-user-sounds`). O app pede armazenamento persistente para o navegador não apagá-los.
+- Nada vai para servidor: cada navegador/aparelho tem os próprios dados. Para levar de um para outro, use o backup ou o compartilhamento de treino.
+
+**Como a web se adapta**
+- **Áudio**: o player usa a Web Audio API ([`webAlertPlayer.ts`](src/services/audio/webAlertPlayer.ts)). Ela é liberada no primeiro toque na tela, controla o volume de cada som (inclusive no iPhone) e abaixa a música de verdade.
+- **Arquivos**: importar sons e treinos usa o seletor de arquivos do navegador. Compartilhar abre o menu do sistema (Web Share) ou baixa o arquivo.
+- **Implementações por plataforma** (`*.web.ts`): [`expoAlertPlayer.web.ts`](src/services/audio/expoAlertPlayer.web.ts), [`expoSoundImporter.web.ts`](src/services/audio/expoSoundImporter.web.ts), [`expoBackupIO.web.ts`](src/services/backup/expoBackupIO.web.ts), [`expoPhaseNotifier.web.ts`](src/services/notifications/expoPhaseNotifier.web.ts).
+
+**Limites da web**
+- **Uma aba por vez**: o banco abre em uma aba só. Numa segunda aba, o app explica e oferece "Tentar de novo".
+- **Sem notificações de fase**: com o app em segundo plano ou a tela bloqueada, o navegador pode pausar o áudio. Para treinar de tela bloqueada, use o app nativo.
+- **Sem vibração no iPhone**: a web não tem vibração no iPhone; no Android usa `navigator.vibrate`.
+- **Navegadores**: precisa de um navegador recente com isolamento de origem (Safari 16.4+, Chrome, Edge, Firefox).
+
+### Publicar na VPS (Docker + Traefik)
+
+- **Imagem**: [`Dockerfile`](Dockerfile) gera o build web e serve com nginx ([`deploy/nginx.conf`](deploy/nginx.conf)).
+- **Cabeçalhos** ([`deploy/headers.conf`](deploy/headers.conf)):
+  - `Cross-Origin-Opener-Policy: same-origin` e `Cross-Origin-Embedder-Policy: require-corp`, **obrigatórios** para o SQLite no navegador;
+  - CSP só com a própria origem (`'wasm-unsafe-eval'` para o WebAssembly);
+  - microfone liberado só para o app.
+- **Cache**: `index.html`, `sw.js` e o manifest sempre revalidados; bundles com hash cacheados por 1 ano.
+
+```bash
+./deploy.sh                              # build linux/amd64 + push de diegosanches/dmtabata-web
+VPS_HOST=root@<servidor> ./deploy.sh     # idem + copia o docker-compose.yml e atualiza /opt/apps/dmtabata
+```
+
+O [`docker-compose.yml`](docker-compose.yml) usa a rede `traefik_traefik`, HTTPS com o `myresolver` e redireciona HTTP para HTTPS (PWA exige HTTPS). O domínio vem de `DMTABATA_HOST` no `.env` do servidor (padrão `tabata.diegomodesto.com.br`) e precisa de um registro DNS apontando para a VPS.
 
 ---
 
@@ -191,6 +235,8 @@ Cada fase ou melhoria é feita em uma branch própria, com testes unitários e d
 | #18 | Pacote pessoal de sons embutido no app |
 | #19 | README atualizado com o estado do projeto |
 | #20 | Compartilhar treinos, salvar como modelo e treinos embutidos (Boxe Sequenciado) |
+| #21 | Som próprio em cada exercício, com importar e gravar direto do seletor |
+| #22 | PWA: app web instalável e offline, SQLite no navegador, Web Audio e deploy na VPS |
 
 ## Licença
 

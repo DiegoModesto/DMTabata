@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~58.0.29",
     "expo": "~58.0.26",
+    "expo-asset": "~58.0.21",
     "expo-audio": "~58.0.12",
     "expo-constants": "~58.0.16",
     "expo-device": "~58.0.5",
@@ -60,7 +61,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "check": "npm run typecheck && npm run lint && npm test",
-    "e2e": "maestro test .maestro/01-login.yaml .maestro/02-criar-treino.yaml .maestro/03-treinar.yaml .maestro/04-sons-e-abas.yaml"
+    "e2e": "maestro test .maestro/01-login.yaml .maestro/02-criar-treino.yaml .maestro/03-treinar.yaml .maestro/04-sons-e-abas.yaml",
+    "web:build": "expo export -p web --clear && node scripts/generate-sw.mjs dist",
+    "web:preview": "node scripts/serve-web.mjs dist 8081"
   },
   "private": true,
   "allowScripts": {

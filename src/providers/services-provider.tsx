@@ -16,6 +16,8 @@ type Props = {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: unknown) => void;
+  /** O que mostrar se o app não abrir; `retry` tenta abrir de novo. */
+  errorFallback?: (error: unknown, retry: () => void) => ReactNode;
 };
 
 /** Abre o banco, aplica migrações/seeds e expõe os serviços para a árvore. */
@@ -25,8 +27,11 @@ export function ServicesProvider({
   children,
   fallback = null,
   onError,
+  errorFallback,
 }: Props) {
   const [services, setServices] = useState<Services | null>(null);
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,13 +47,21 @@ export function ServicesProvider({
         if (!cancelled) setServices(created);
       } catch (error) {
         onError?.(error);
+        if (!cancelled) setFailure({ error });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [openDatabase, createOverrides, onError]);
+  }, [openDatabase, createOverrides, onError, attempt]);
 
+  if (failure && errorFallback) {
+    const retry = () => {
+      setFailure(null);
+      setAttempt((a) => a + 1);
+    };
+    return <>{errorFallback(failure.error, retry)}</>;
+  }
   if (!services) return <>{fallback}</>;
   return <ServicesContext.Provider value={services}>{children}</ServicesContext.Provider>;
 }
