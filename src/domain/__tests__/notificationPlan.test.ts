@@ -10,6 +10,9 @@ const NOW = 1_700_000_000_000;
 describe('notificationSound', () => {
   it('sons embutidos viram arquivos empacotados; importados usam o padrão do sistema', () => {
     expect(notificationSound('go')).toBe('go.wav');
+    // Arquivo com "_" (exigência do Android); o id continua com hífen.
+    expect(notificationSound('beep-high')).toBe('beep_high.wav');
+    expect(notificationSound('ring-bell-3')).toBe('ring_bell_3.wav');
     expect(notificationSound('5f1c-uuid')).toBe('default');
     expect(notificationSound('silent')).toBeNull();
     expect(notificationSound(null)).toBeNull();

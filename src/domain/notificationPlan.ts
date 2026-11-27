@@ -31,7 +31,11 @@ const PHASE_TITLES: Record<Phase['kind'], string> = {
 export function notificationSound(soundId: string | null): string | null {
   if (!soundId || soundId === SILENT_SOUND_ID) return null;
   // Notificações usam os .wav embutidos; mp3 (pacote/importados) caem no som padrão do sistema.
-  return isBuiltinSoundId(soundId) && !isPackSoundId(soundId) ? `${soundId}.wav` : 'default';
+  // O Android só aceita nomes de recurso com letras, números e "_": o arquivo de "beep-high"
+  // é "beep_high.wav" (o id salvo no banco não muda).
+  return isBuiltinSoundId(soundId) && !isPackSoundId(soundId)
+    ? `${soundId.replace(/-/g, '_')}.wav`
+    : 'default';
 }
 
 function soundForPhase(phase: Phase, settings: AlertSettings): string | null {

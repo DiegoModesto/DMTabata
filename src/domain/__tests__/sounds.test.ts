@@ -110,7 +110,9 @@ describe('catálogo de sons embutidos', () => {
         expect(fs.existsSync(path.join(root, file))).toBe(true);
         continue;
       }
-      const file = `./assets/sounds/${s.id}.wav`;
+      const file = `./assets/sounds/${notificationSound(s.id)}`;
+      // Android: nome de recurso só com letras minúsculas, números e "_".
+      expect(notificationSound(s.id)).toMatch(/^[a-z][a-z0-9_]*\.wav$/);
       expect(registered).toContain(file);
       expect(fs.existsSync(path.join(root, file))).toBe(true);
     }
@@ -238,6 +240,6 @@ describe('pacote pessoal', () => {
 
   it('sons do pacote viram "default" nas notificações; .wav embutidos continuam', () => {
     expect(notificationSound('pack-corneta')).toBe('default');
-    expect(notificationSound('ring-bell')).toBe('ring-bell.wav');
+    expect(notificationSound('ring-bell')).toBe('ring_bell.wav');
   });
 });

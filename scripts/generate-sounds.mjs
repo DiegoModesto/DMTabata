@@ -111,8 +111,8 @@ function sweep(from, to, ms, volume = 0.4) {
 
 const sounds = {
   'beep.wav': tone(880, 150),
-  'beep-high.wav': tone(1320, 180),
-  'double-beep.wav': concat(tone(988, 110), silence(70), tone(988, 110)),
+  'beep_high.wav': tone(1320, 180),
+  'double_beep.wav': concat(tone(988, 110), silence(70), tone(988, 110)),
   'whistle.wav': concat(tone(2200, 120, { volume: 0.4 }), tone(2600, 380, { volume: 0.4 })),
   'bell.wav': tone(660, 900, { decay: 4, harmonics: [1, 0.5, 0.25, 0.12] }),
   'gong.wav': tone(110, 1800, { decay: 1.8, harmonics: [1, 0.6, 0.4, 0.3, 0.2], volume: 0.7 }),
@@ -126,8 +126,8 @@ const sounds = {
     tone(1047, 600, { decay: 2, harmonics: [1, 0.3] }),
   ),
   // Ringue e luta
-  'ring-bell.wav': metalBell(950, 1600),
-  'ring-bell-3.wav': concat(
+  'ring_bell.wav': metalBell(950, 1600),
+  'ring_bell_3.wav': concat(
     metalBell(950, 330, { decay: 3 }),
     metalBell(950, 330, { decay: 3 }),
     metalBell(950, 1400),
@@ -135,7 +135,7 @@ const sounds = {
   'clapper.wav': concat(knock(), silence(90), knock()),
   // Alertas
   'tick.wav': tone(2000, 30, { volume: 0.5 }),
-  'start-321.wav': concat(
+  'start_321.wav': concat(
     tone(880, 150),
     silence(850),
     tone(880, 150),
